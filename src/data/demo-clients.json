@@ -1,0 +1,77 @@
+[
+  {
+    "key": "c1", "id": "00000000-0000-4000-8000-000000000001",
+    "legalName": "Empresa Exemplo Ltda", "tradeName": "Empresa Exemplo",
+    "document": "12345678000195", "stateRegistration": "123456789000", "municipalRegistration": "45879",
+    "address": { "zip": "80010000", "street": "Av. Brasil", "number": "123", "district": "Centro", "city": "Curitiba", "state": "PR" },
+    "phone": "41999990001", "email": "contato@empresaexemplo.demo", "taxRegime": "SIMPLES_NACIONAL",
+    "contractStart": "2022-03-01", "modules": ["CONTABIL", "FISCAL", "FOLHA"],
+    "monthlyFeeCents": 120000, "feeDueDay": 10, "active": true,
+    "notes": "Cliente desde 2022. Envia notas fiscais até o dia 5."
+  },
+  {
+    "key": "c2", "id": "00000000-0000-4000-8000-000000000002",
+    "legalName": "Tech Soluções S.A", "tradeName": "Tech Soluções",
+    "document": "98765432000198", "stateRegistration": "987654321000",
+    "address": { "zip": "80420000", "street": "Rua das Flores", "number": "456", "district": "Batel", "city": "Curitiba", "state": "PR" },
+    "phone": "41999990002", "email": "financeiro@techsolucoes.demo", "taxRegime": "LUCRO_PRESUMIDO",
+    "contractStart": "2021-08-15", "modules": ["CONTABIL", "FISCAL", "SOCIETARIO"],
+    "monthlyFeeCents": 95000, "feeDueDay": 15, "active": true
+  },
+  {
+    "key": "c3", "id": "00000000-0000-4000-8000-000000000003",
+    "legalName": "Comércio Silva Ltda", "tradeName": "Silva Comércio",
+    "document": "11222333000181", "stateRegistration": "111222333444",
+    "address": { "zip": "84010000", "street": "Rua XV de Novembro", "number": "789", "district": "Centro", "city": "Ponta Grossa", "state": "PR" },
+    "phone": "42999990003", "email": "silva@comerciosilva.demo", "taxRegime": "SIMPLES_NACIONAL",
+    "contractStart": "2023-01-10", "modules": ["CONTABIL", "FISCAL"],
+    "monthlyFeeCents": 80000, "feeDueDay": 10, "active": true
+  },
+  {
+    "key": "c4", "id": "00000000-0000-4000-8000-000000000004",
+    "legalName": "Alpha Distribuidora de Alimentos Ltda", "tradeName": "Alpha Distribuidora",
+    "document": "22333444000181", "stateRegistration": "222333444555", "municipalRegistration": "78211",
+    "address": { "zip": "86010000", "street": "Av. Getúlio Vargas", "number": "1010", "district": "Centro", "city": "Londrina", "state": "PR" },
+    "phone": "43999990004", "email": "adm@alphadistribuidora.demo", "taxRegime": "LUCRO_REAL",
+    "contractStart": "2020-05-04", "modules": ["CONTABIL", "FISCAL", "FOLHA", "SOCIETARIO"],
+    "monthlyFeeCents": 150000, "feeDueDay": 20, "active": true,
+    "notes": "Possui parcelamento de tributos em andamento."
+  },
+  {
+    "key": "c5", "id": "00000000-0000-4000-8000-000000000005",
+    "legalName": "Padaria Pão Dourado ME", "tradeName": "Pão Dourado",
+    "document": "33444555000181", "stateRegistration": "333444555666",
+    "address": { "zip": "80250000", "street": "Rua Bento Viana", "number": "55", "district": "Água Verde", "city": "Curitiba", "state": "PR" },
+    "phone": "41999990005", "email": "paodourado@demo.local", "taxRegime": "SIMPLES_NACIONAL",
+    "contractStart": "2024-02-01", "modules": ["CONTABIL", "FOLHA"],
+    "monthlyFeeCents": 45000, "feeDueDay": 5, "active": true
+  },
+  {
+    "key": "c6", "id": "00000000-0000-4000-8000-000000000006",
+    "legalName": "Clínica Vida Plena Ltda", "tradeName": "Vida Plena",
+    "document": "44555666000181", "stateRegistration": "444555666777", "municipalRegistration": "90123",
+    "address": { "zip": "80030000", "street": "Rua Mateus Leme", "number": "1200", "district": "Centro Cívico", "city": "Curitiba", "state": "PR" },
+    "phone": "41999990006", "email": "adm@vidaplena.demo", "taxRegime": "LUCRO_PRESUMIDO",
+    "contractStart": "2022-11-20", "modules": ["CONTABIL", "FISCAL", "FOLHA"],
+    "monthlyFeeCents": 110000, "feeDueDay": 12, "active": true
+  },
+  {
+    "key": "c7", "id": "00000000-0000-4000-8000-000000000007",
+    "legalName": "João Pereira da Silva", "tradeName": "João Pereira (Autônomo)",
+    "document": "52998224725",
+    "address": { "zip": "80510000", "street": "Rua Padre Anchieta", "number": "300", "complement": "Ap 42", "district": "Bigorrilho", "city": "Curitiba", "state": "PR" },
+    "phone": "41999990007", "email": "joao.pereira@demo.local", "taxRegime": "MEI",
+    "contractStart": "2024-06-01", "modules": ["CONTABIL"],
+    "monthlyFeeCents": 25000, "feeDueDay": 25, "active": true
+  },
+  {
+    "key": "c8", "id": "00000000-0000-4000-8000-000000000008",
+    "legalName": "Construtora Horizonte Ltda", "tradeName": "Horizonte Construções",
+    "document": "55666777000181", "stateRegistration": "555666777888",
+    "address": { "zip": "87013000", "street": "Av. Colombo", "number": "2500", "district": "Zona 7", "city": "Maringá", "state": "PR" },
+    "phone": "44999990008", "email": "contato@horizonte.demo", "taxRegime": "LUCRO_REAL",
+    "contractStart": "2019-09-01", "modules": ["CONTABIL", "FISCAL"],
+    "monthlyFeeCents": 180000, "feeDueDay": 8, "active": false,
+    "notes": "Contrato encerrado. Histórico mantido para consulta."
+  }
+]
