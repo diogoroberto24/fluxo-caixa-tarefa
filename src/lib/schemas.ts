@@ -45,7 +45,7 @@ export const clientSchema = z.object({
     .trim()
     .refine((v) => [10, 11].includes(onlyDigits(v).length), "Telefone inválido."),
   email: z.string().trim().email("E-mail inválido."),
-  taxRegime: z.enum(["MEI", "SIMPLES_NACIONAL", "LUCRO_PRESUMIDO", "LUCRO_REAL"]),
+  taxRegime: z.enum(["MEI", "SIMPLES_NACIONAL", "LUCRO_PRESUMIDO", "LUCRO_REAL", "PESSOA_FISICA"]),
   contractStart: isoDate("Informe a data de início do contrato."),
   modules: z
     .array(z.enum(["CONTABIL", "FISCAL", "FOLHA", "SOCIETARIO"]))

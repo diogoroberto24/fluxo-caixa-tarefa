@@ -19,7 +19,8 @@ export type TaxRegime =
   | "MEI"
   | "SIMPLES_NACIONAL"
   | "LUCRO_PRESUMIDO"
-  | "LUCRO_REAL";
+  | "LUCRO_REAL"
+  | "PESSOA_FISICA";
 
 export interface Address {
   zip: string;

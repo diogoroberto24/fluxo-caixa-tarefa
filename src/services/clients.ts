@@ -36,4 +36,5 @@ export const TAX_REGIME_LABEL: Record<TaxRegime, string> = {
   SIMPLES_NACIONAL: "Simples Nacional",
   LUCRO_PRESUMIDO: "Lucro Presumido",
   LUCRO_REAL: "Lucro Real",
+  PESSOA_FISICA: "Pessoa Física/Autônomo",
 };
