@@ -97,8 +97,10 @@ export function ClientDetailDialog({
                 )}
               </div>
               {(() => {
-                const items = feeHistory(receivables, client.id, "EVENTUAL").slice().reverse();
-                if (items.length === 0) return <p className="text-sm text-slate-500">Nenhuma cobrança lançada para este cliente.</p>;
+                const all = feeHistory(receivables, client.id, "EVENTUAL").slice().reverse();
+                const items = all.filter((r) => !r.canceled);
+                const canceledCount = all.length - items.length;
+                if (items.length === 0 && canceledCount === 0) return <p className="text-sm text-slate-500">Nenhuma cobrança lançada para este cliente.</p>;
                 return (
                   <ul className="divide-y divide-line rounded-lg border border-line text-sm">
                     {items.map((r) => (
@@ -120,6 +122,11 @@ export function ClientDetailDialog({
                         </span>
                       </li>
                     ))}
+                    {canceledCount > 0 && (
+                      <li className="px-3 py-2 text-xs text-slate-500">
+                        {canceledCount} parcela(s) cancelada(s) (por edição do serviço ou cancelamento) — ficam no histórico em Contas a Receber.
+                      </li>
+                    )}
                   </ul>
                 );
               })()}

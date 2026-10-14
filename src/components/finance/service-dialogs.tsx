@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
+import { useRef } from "react";
 import { useForm } from "react-hook-form";
 import { useAppStore } from "@/components/providers/app-store";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,8 @@ function ServiceForm({
 }) {
   const { receivables, addService, updateService, notify, today } = useAppStore();
   const editing = !!groupId;
+  /** Trava de envio duplo (dois cliques no mesmo instante): editar não é idempotente. */
+  const sending = useRef(false);
   const g = groupId ? serviceGroup(receivables, groupId) : null;
   const paidCount = g?.paid.length ?? 0;
   const maxInstallments = MAX - paidCount;
@@ -73,6 +76,16 @@ function ServiceForm({
   const preview = planInstallments(editing ? remaining : totalCents, n, watch("firstDueDate") ?? "");
 
   async function onSubmit(v: ServiceFormValues) {
+    if (sending.current) return;
+    sending.current = true;
+    try {
+      await submit(v);
+    } finally {
+      sending.current = false;
+    }
+  }
+
+  async function submit(v: ServiceFormValues) {
     if (editing && parseMoneyToCents(v.total)! <= paidCents) {
       setError("total", { message: `O valor total deve ser maior que o já pago (${formatBRL(paidCents)}).` });
       return;
