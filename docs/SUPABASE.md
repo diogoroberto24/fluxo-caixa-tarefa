@@ -32,6 +32,9 @@ Projeto próprio do escritório, região São Paulo, com Data API **ligada**,
 8. `supabase/migrations/20261015000002_tarefas_rls.sql`
 9. `supabase/migrations/20261015000003_tarefas_service_role.sql`
 
+10. `supabase/migrations/20261016000001_regime_pessoa_fisica.sql` (regime Pessoa Física/Autônomo)
+11. `supabase/migrations/20261017000001_clientes_eventuais.sql` (clientes eventuais e serviço parcelado)
+
 Cada uma deve terminar com "Success. No rows returned". Rodar de novo gera erro "já existe" (esperado, sem dano).
 Confira em **Table Editor**: `profiles`, `clients`, `client_fee_history`, `audit_log`, `financial_categories`,
 `recurrence_rules`, `receivables`, `payables` e `payments`, todas com RLS ativado.
@@ -74,6 +77,13 @@ Depois, em **Authentication → URL Configuration**, ajuste o *Site URL* para o 
 - **Recorrência:** ao concluir ou cancelar uma ocorrência recorrente, a próxima é criada na mesma transação (mensal, semestral, anual; dia 31 vira o último dia do mês). `(tarefa, prazo)` é único: nada duplica. Cancelar pode encerrar a série.
 - **Status idempotente:** concluir duas vezes não altera nada e não gera outra ocorrência. Tarefa concluída/cancelada não reabre nem é editada.
 - **Perfis:** ADMIN e CONTADOR criam/editam/cancelam; FINANCEIRO atualiza status; OPERADOR atualiza só as tarefas atribuídas a ele e não cancela.
+
+## Clientes fixos e eventuais
+- **Fixo:** honorários mensais recorrentes (comportamento original, sem mudança).
+- **Eventual:** serviço avulso. Nunca gera mensalidade (`generate_monthly_fees` ignora). No cadastro informa-se a descrição, o valor total, à vista ou 2 a 5 parcelas e o vencimento (da 1ª parcela).
+- **Parcelas:** vencem todo mês no dia do 1º vencimento (mês curto usa o último dia). Os centavos que sobram ficam na 1ª parcela; a soma é sempre o total.
+- **Antecipação:** qualquer parcela em aberto pode ser paga antes do vencimento (botão "Antecipar pagamento").
+- O tipo é definido no cadastro e não muda depois. Novo serviço para o mesmo cliente: Contas a Receber → Nova cobrança → Forma de pagamento.
 
 ## Backup
 O plano gratuito tem backups limitados. Veja `npm run backup` e `npm run restore` em `docs/DEPLOY.md`.

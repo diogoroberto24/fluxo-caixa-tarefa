@@ -17,7 +17,8 @@ const money = z
 
 export const recurrenceValues = ["NONE", "MENSAL", "SEMESTRAL", "ANUAL"] as const;
 
-export const clientSchema = z.object({
+const clientBase = z.object({
+  kind: z.enum(["FIXO", "EVENTUAL"]),
   legalName: required("Informe a razão social."),
   tradeName: required("Informe o nome fantasia."),
   document: z
@@ -50,14 +51,59 @@ export const clientSchema = z.object({
   modules: z
     .array(z.enum(["CONTABIL", "FISCAL", "FOLHA", "SOCIETARIO"]))
     .min(1, "Selecione ao menos um módulo."),
-  monthlyFee: money,
-  feeDueDay: z
-    .string()
-    .refine((v) => /^\d+$/.test(v) && +v >= 1 && +v <= 31, "Dia entre 1 e 31."),
+  // Cliente FIXO: honorários mensais (obrigatórios só para FIXO; validados abaixo)
+  monthlyFee: z.string().trim().optional(),
+  feeDueDay: z.string().optional(),
+  // Cliente EVENTUAL: serviço avulso (obrigatório só ao cadastrar; validado abaixo)
+  serviceDescription: z.string().trim().optional(),
+  serviceTotal: z.string().trim().optional(),
+  installments: z.string().optional(),
+  firstDueDate: z.string().optional(),
   active: z.enum(["true", "false"]),
   notes: optional,
 });
-export type ClientFormValues = z.infer<typeof clientSchema>;
+export type ClientFormValues = z.infer<typeof clientBase>;
+
+/** Número máximo de parcelas do serviço avulso (1 = à vista). */
+export const MAX_INSTALLMENTS = 5;
+
+const fail = (ctx: z.RefinementCtx, path: string, message: string) =>
+  ctx.addIssue({ code: z.ZodIssueCode.custom, path: [path], message });
+
+/** Cliente FIXO: mesmas regras de sempre para honorários e vencimento. */
+function checkFixed(v: ClientFormValues, ctx: z.RefinementCtx) {
+  if (v.kind !== "FIXO") return;
+  const fee = (v.monthlyFee ?? "").trim();
+  if (!fee) fail(ctx, "monthlyFee", "Informe o valor.");
+  else {
+    const c = parseMoneyToCents(fee);
+    if (c === null || c <= 0) fail(ctx, "monthlyFee", "Informe um valor válido maior que zero (ex.: 1.234,56).");
+  }
+  const day = v.feeDueDay ?? "";
+  if (!(/^\d+$/.test(day) && +day >= 1 && +day <= 31)) fail(ctx, "feeDueDay", "Dia entre 1 e 31.");
+}
+
+/** Cliente EVENTUAL novo: serviço, valor, parcelas e primeiro vencimento. */
+function checkPlan(v: ClientFormValues, ctx: z.RefinementCtx) {
+  if (v.kind !== "EVENTUAL") return;
+  if (!(v.serviceDescription ?? "").trim()) fail(ctx, "serviceDescription", "Informe a descrição do serviço.");
+  const totalText = (v.serviceTotal ?? "").trim();
+  const total = parseMoneyToCents(totalText);
+  const n = Number(v.installments);
+  if (!totalText) fail(ctx, "serviceTotal", "Informe o valor do serviço.");
+  else if (total === null || total <= 0) fail(ctx, "serviceTotal", "Informe um valor válido maior que zero (ex.: 1.234,56).");
+  if (!Number.isInteger(n) || n < 1 || n > MAX_INSTALLMENTS) fail(ctx, "installments", "Escolha de 1 a 5 parcelas.");
+  else if (total !== null && total > 0 && total < n) fail(ctx, "serviceTotal", "Valor muito baixo para o número de parcelas.");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v.firstDueDate ?? "")) fail(ctx, "firstDueDate", "Informe a data de vencimento.");
+}
+
+/** Edição de cliente (o serviço avulso é gerenciado em Contas a Receber). */
+export const clientSchema = clientBase.superRefine(checkFixed);
+/** Cadastro de cliente. */
+export const clientCreateSchema = clientBase.superRefine((v, ctx) => {
+  checkFixed(v, ctx);
+  checkPlan(v, ctx);
+});
 
 export const receivableSchema = z.object({
   clientId: required("Selecione o cliente."),
@@ -66,6 +112,12 @@ export const receivableSchema = z.object({
   competence: z.string().regex(/^\d{4}-\d{2}$/, "Informe a competência."),
   amount: money,
   dueDate: isoDate("Informe o vencimento."),
+  /** Parcelas do serviço avulso: "1" = à vista. Honorários nunca são parcelados. */
+  installments: z.string().optional(),
+}).superRefine((v, ctx) => {
+  const n = Number(v.installments ?? "1");
+  if (!Number.isInteger(n) || n < 1 || n > MAX_INSTALLMENTS) fail(ctx, "installments", "Escolha de 1 a 5 parcelas.");
+  else if (n > 1 && v.category === "HONORARIOS") fail(ctx, "installments", "Honorários mensais não são parcelados.");
 });
 export type ReceivableFormValues = z.infer<typeof receivableSchema>;
 

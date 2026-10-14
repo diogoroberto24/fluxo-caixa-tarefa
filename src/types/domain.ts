@@ -13,6 +13,9 @@ export interface User {
   role: Role;
 }
 
+/** FIXO: honorários mensais recorrentes. EVENTUAL: serviço avulso (à vista ou parcelado), sem mensalidade. */
+export type ClientKind = "FIXO" | "EVENTUAL";
+
 export type ServiceModule = "CONTABIL" | "FISCAL" | "FOLHA" | "SOCIETARIO";
 
 export type TaxRegime =
@@ -46,6 +49,8 @@ export interface Client {
   taxRegime: TaxRegime;
   contractStart: string;
   modules: ServiceModule[];
+  kind: ClientKind;
+  /** Só para cliente FIXO (EVENTUAL guarda 0 / dia 1 e é ignorado). */
   monthlyFeeCents: number;
   feeDueDay: number;
   active: boolean;
@@ -72,6 +77,9 @@ export interface Receivable {
   dueDate: string;
   paidAt?: string;
   paidAmountCents?: number;
+  /** Parcela i de N de um serviço avulso (ausente em cobranças comuns). */
+  installmentNumber?: number;
+  installmentTotal?: number;
   notes?: string;
   canceled: boolean;
   history: HistoryEntry[];

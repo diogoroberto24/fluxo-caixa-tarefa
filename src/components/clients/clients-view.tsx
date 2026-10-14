@@ -136,6 +136,7 @@ export function ClientsView() {
                       <button type="button" onClick={() => setDetail(c)} className="truncate font-semibold text-navy hover:underline">
                         {c.tradeName}
                       </button>
+                      {c.kind === "EVENTUAL" && <Badge tone="warning">Eventual</Badge>}
                       {c.isDemo && <Badge tone="warning">Demo</Badge>}
                     </div>
                     <div className="truncate text-[11px] text-slate-500">{c.legalName}</div>
@@ -148,8 +149,14 @@ export function ClientsView() {
                     ))}
                   </div>
                   <div className="font-semibold">
-                    {formatBRL(c.monthlyFeeCents)}
-                    <span className="block text-[11px] font-normal text-slate-500">vence dia {c.feeDueDay}</span>
+                    {c.kind === "EVENTUAL" ? (
+                      <span className="text-xs font-medium text-slate-600">Serviço avulso</span>
+                    ) : (
+                      <>
+                        {formatBRL(c.monthlyFeeCents)}
+                        <span className="block text-[11px] font-normal text-slate-500">vence dia {c.feeDueDay}</span>
+                      </>
+                    )}
                   </div>
                   <div><Badge tone={c.active ? "success" : "neutral"}>{c.active ? "Ativo" : "Inativo"}</Badge></div>
                   <div className="flex gap-1.5 md:justify-end">

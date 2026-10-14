@@ -2,16 +2,19 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/session";
-import { formValuesToInput } from "@/lib/data/client-mapper";
+import { formValuesToInput, formValuesToPlan } from "@/lib/data/client-mapper";
 import {
+  getClientKind,
   insertClient,
+  insertOccasionalClient,
   listFeeHistory,
   setClientActiveById,
   updateClientById,
   type FeeHistoryEntry,
 } from "@/lib/data/clients";
 import { can } from "@/lib/permissions";
-import { clientSchema, type ClientFormValues } from "@/lib/schemas";
+import { friendlyDbError } from "@/lib/action-result";
+import { clientCreateSchema, clientSchema, type ClientFormValues } from "@/lib/schemas";
 import type { Client } from "@/types/domain";
 
 export type ActionResult<T> =
@@ -37,7 +40,14 @@ export async function saveClientAction(
   const denied = await authorize();
   if (denied) return { ok: false, error: denied.error };
 
-  const parsed = clientSchema.safeParse(values);
+  // Na edição o tipo é o gravado no banco (nunca o enviado), para não zerar a mensalidade de um cliente fixo.
+  if (id) {
+    const kind = await getClientKind(id);
+    if (!kind) return { ok: false, error: "Cliente não encontrado ou sem permissão." };
+    values = { ...values, kind };
+  }
+  // Cadastro valida também o serviço avulso (cliente eventual); a edição não mexe no serviço.
+  const parsed = (id ? clientSchema : clientCreateSchema).safeParse(values);
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
     return {
@@ -50,7 +60,9 @@ export async function saveClientAction(
   const input = formValuesToInput(parsed.data);
   const { data, error } = id
     ? await updateClientById(id, input)
-    : await insertClient(input);
+    : input.kind === "EVENTUAL"
+      ? await insertOccasionalClient(input, formValuesToPlan(parsed.data))
+      : await insertClient(input);
 
   if (error || !data) {
     if (error?.code === "23505") {
@@ -59,8 +71,7 @@ export async function saveClientAction(
     if (error?.code === "42501") {
       return { ok: false, error: "Seu perfil não tem permissão para esta operação." };
     }
-    console.error("saveClientAction", error?.code, error?.message);
-    return { ok: false, error: error?.message.includes("não encontrado") ? error.message : UNEXPECTED };
+    return { ok: false, error: error ? friendlyDbError(error) : UNEXPECTED };
   }
 
   revalidatePath("/", "layout");

@@ -19,7 +19,7 @@ function firstOf<T>(v: Embedded<T> | undefined): T | undefined {
 }
 
 export const RECEIVABLE_SELECT =
-  "id, client_id, description, category, competence, amount, due_date, notes, canceled_at, cancel_reason, is_demo, created_at, payments(paid_on, amount)";
+  "id, client_id, description, category, competence, amount, due_date, notes, installment_number, installment_total, canceled_at, cancel_reason, is_demo, created_at, payments(paid_on, amount)";
 
 export const PAYABLE_SELECT =
   "id, description, category_id, supplier, amount, issue_date, due_date, notes, canceled_at, cancel_reason, is_demo, created_at, financial_categories(name), recurrence_rules(frequency), payments(paid_on, amount)";
@@ -33,6 +33,8 @@ export interface ReceivableRow {
   amount: number | string;
   due_date: string;
   notes: string | null;
+  installment_number: number | null;
+  installment_total: number | null;
   canceled_at: string | null;
   cancel_reason: string | null;
   is_demo: boolean;
@@ -87,6 +89,8 @@ export function rowToReceivable(r: ReceivableRow): Receivable {
     dueDate: r.due_date,
     paidAt: payment?.paid_on,
     paidAmountCents: payment ? feeToCents(payment.amount) : undefined,
+    installmentNumber: r.installment_number ?? undefined,
+    installmentTotal: r.installment_total ?? undefined,
     notes: r.notes ?? undefined,
     canceled: r.canceled_at !== null,
     history: buildHistory(r, payment, {

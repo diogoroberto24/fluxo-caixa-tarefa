@@ -3,11 +3,13 @@ import { createClient } from "@/lib/supabase/server";
 import type { Client } from "@/types/domain";
 import {
   CLIENT_COLUMNS,
+  centsToFee,
   feeToCents,
   inputToRow,
   rowToClient,
   type ClientInput,
   type ClientRow,
+  type ServicePlan,
 } from "./client-mapper";
 
 export interface DbError {
@@ -36,6 +38,36 @@ export async function insertClient(
     .single();
   if (error) return { error };
   return { data: rowToClient(data as ClientRow) };
+}
+
+/** Cliente EVENTUAL + cobranças do serviço (à vista ou parcelado) em uma única transação. */
+export async function insertOccasionalClient(
+  input: ClientInput,
+  plan: ServicePlan,
+): Promise<{ data?: Client; error?: DbError }> {
+  const supabase = await createClient();
+  const { data: id, error } = await supabase.rpc("create_occasional_client", {
+    p_client: inputToRow(input),
+    p_description: plan.description,
+    p_total: centsToFee(plan.totalCents),
+    p_installments: plan.installments,
+    p_first_due: plan.firstDueDate,
+  });
+  if (error) return { error };
+  const { data, error: e2 } = await supabase
+    .from("clients")
+    .select(CLIENT_COLUMNS)
+    .eq("id", id as string)
+    .single();
+  if (e2) return { error: e2 };
+  return { data: rowToClient(data as ClientRow) };
+}
+
+/** Tipo gravado no banco (a fonte da verdade; o formulário nunca decide). */
+export async function getClientKind(id: string): Promise<"FIXO" | "EVENTUAL" | null> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("clients").select("kind").eq("id", id).maybeSingle();
+  return (data?.kind as "FIXO" | "EVENTUAL" | undefined) ?? null;
 }
 
 export async function updateClientById(

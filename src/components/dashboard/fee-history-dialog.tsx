@@ -22,7 +22,8 @@ export function FeeHistoryDialog({
   const [expanded, setExpanded] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const client = clients.find((c) => c.id === clientId);
-  const history = clientId ? feeHistory(receivables, clientId).slice(0, 12) : [];
+  const eventual = client?.kind === "EVENTUAL";
+  const history = clientId ? feeHistory(receivables, clientId, client?.kind ?? "FIXO").slice(0, 12) : [];
   const canPay = can(currentUser.role, "receivable:pay");
 
   return (
@@ -30,18 +31,18 @@ export function FeeHistoryDialog({
       open={!!clientId}
       onOpenChange={(o) => !o && onClose()}
       size="xl"
-      title={`Histórico de honorários — ${client?.tradeName ?? ""}`}
-      description="Cobranças por competência. Alterar o valor do contrato não altera cobranças anteriores."
+      title={`${eventual ? "Serviço avulso e parcelas" : "Histórico de honorários"} — ${client?.tradeName ?? ""}`}
+      description={eventual ? "Parcelas do serviço. Pagamentos podem ser antecipados antes do vencimento." : "Cobranças por competência. Alterar o valor do contrato não altera cobranças anteriores."}
     >
       {client && (
         <>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-primary-soft px-4 py-3">
-            <span className="text-sm text-slate-600">Honorários mensais atuais (contrato)</span>
-            <span className="text-lg font-bold text-primary">{formatBRL(client.monthlyFeeCents)}</span>
+            <span className="text-sm text-slate-600">{eventual ? "Cliente eventual: sem mensalidade" : "Honorários mensais atuais (contrato)"}</span>
+            <span className="text-lg font-bold text-primary">{eventual ? "Avulso" : formatBRL(client.monthlyFeeCents)}</span>
           </div>
 
           {history.length === 0 ? (
-            <EmptyState icon={ReceiptText} title="Nenhuma cobrança de honorários" description="Este cliente ainda não possui cobranças geradas." />
+            <EmptyState icon={ReceiptText} title={eventual ? "Nenhuma parcela lançada" : "Nenhuma cobrança de honorários"} description="Este cliente ainda não possui cobranças geradas." />
           ) : (
             <ul className="divide-y divide-line">
               <li className="hidden grid-cols-[90px_110px_110px_110px_100px_1fr] gap-3 pb-2 text-xs font-medium text-slate-500 md:grid">
@@ -54,7 +55,7 @@ export function FeeHistoryDialog({
                 return (
                   <li key={r.id} className="py-3">
                     <div className="grid items-center gap-x-3 gap-y-2 md:grid-cols-[90px_110px_110px_110px_100px_1fr]">
-                      <span className="font-medium text-navy">{competenceLabel(r.competence)}</span>
+                      <span className="font-medium text-navy">{r.installmentNumber ? `${r.installmentNumber}/${r.installmentTotal}` : competenceLabel(r.competence)}</span>
                       <span className="text-sm"><span className="text-xs text-slate-500 md:hidden">Venc. </span>{formatDate(r.dueDate)}</span>
                       <span className="text-sm"><span className="text-xs text-slate-500 md:hidden">Pago em </span>{formatDate(r.paidAt)}</span>
                       <span className="font-semibold md:text-right">{formatBRL(r.amountCents)}</span>
@@ -78,7 +79,7 @@ export function FeeHistoryDialog({
                               );
                             }}
                           >
-                            {busyId === r.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />} Registrar pagamento
+                            {busyId === r.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />} {r.dueDate > today ? "Antecipar pagamento" : "Registrar pagamento"}
                           </Button>
                         )}
                         <Button size="sm" variant="outline" onClick={() => setExpanded(isExpanded ? null : r.id)} aria-expanded={isExpanded}>

@@ -4,13 +4,22 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { useAppStore } from "@/components/providers/app-store";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/fields";
 import { clientToFormValues } from "@/lib/data/client-mapper";
-import { clientSchema, type ClientFormValues } from "@/lib/schemas";
+import { formatBRL, formatDate } from "@/lib/format";
+import { planInstallments } from "@/lib/installments";
+import { parseMoneyToCents } from "@/lib/money";
+import { clientCreateSchema, clientSchema, type ClientFormValues } from "@/lib/schemas";
 import { onlyDigits } from "@/lib/validators";
 import { MODULE_LABEL, TAX_REGIME_LABEL } from "@/services/clients";
-import type { Client, ServiceModule, TaxRegime } from "@/types/domain";
+import type { Client, ClientKind, ServiceModule, TaxRegime } from "@/types/domain";
+
+const KIND_OPTIONS: { value: ClientKind; title: string; text: string }[] = [
+  { value: "FIXO", title: "Cliente fixo", text: "Honorários mensais recorrentes." },
+  { value: "EVENTUAL", title: "Cliente eventual", text: "Serviço avulso: à vista ou parcelado em até 5 vezes." },
+];
 
 export function ClientForm({
   client,
@@ -27,20 +36,32 @@ export function ClientForm({
     control,
     handleSubmit,
     setError,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<ClientFormValues>({
-    resolver: zodResolver(clientSchema),
+    resolver: zodResolver(editing ? clientSchema : clientCreateSchema),
     defaultValues: client
       ? clientToFormValues(client)
       : {
+          kind: "FIXO",
           taxRegime: "SIMPLES_NACIONAL",
           contractStart: today,
           modules: [],
           feeDueDay: "10",
           active: "true",
           state: "PR",
+          serviceDescription: "Serviço avulso",
+          installments: "1",
+          firstDueDate: today,
         },
   });
+
+  const kind = watch("kind");
+  const eventual = kind === "EVENTUAL";
+  const installments = Number(watch("installments") ?? "1");
+  const preview = eventual
+    ? planInstallments(parseMoneyToCents(watch("serviceTotal") ?? "") ?? 0, installments, watch("firstDueDate") ?? "")
+    : [];
 
   async function onSubmit(v: ClientFormValues) {
     const doc = onlyDigits(v.document);
@@ -65,6 +86,31 @@ export function ClientForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="grid gap-4 sm:grid-cols-6">
+      <fieldset className="sm:col-span-6">
+        <legend className="mb-1.5 text-xs font-medium text-slate-600">Tipo de cliente *</legend>
+        {editing ? (
+          <p className="flex items-center gap-2 text-sm">
+            <Badge tone={eventual ? "warning" : "info"}>{eventual ? "Cliente eventual" : "Cliente fixo"}</Badge>
+            <span className="text-xs text-slate-500">O tipo é definido no cadastro e não pode ser alterado.</span>
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {KIND_OPTIONS.map((o) => (
+              <label
+                key={o.value}
+                className="flex cursor-pointer items-start gap-3 rounded-lg border border-line p-3 text-sm has-[:checked]:border-primary has-[:checked]:bg-primary-soft/50"
+              >
+                <input type="radio" value={o.value} className="mt-1 h-4 w-4 accent-primary" {...register("kind")} />
+                <span>
+                  <span className="block font-semibold text-navy">{o.title}</span>
+                  <span className="text-xs text-slate-500">{o.text}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
+      </fieldset>
+
       <Field label="Razão social *" error={errors.legalName?.message} className="sm:col-span-4">
         <Input {...register("legalName")} />
       </Field>
@@ -120,12 +166,18 @@ export function ClientForm({
           ))}
         </Select>
       </Field>
-      <Field label="Início do contrato *" error={errors.contractStart?.message} className="sm:col-span-3">
+      <Field
+        label={eventual ? "Data do serviço *" : "Início do contrato *"}
+        error={errors.contractStart?.message}
+        className="sm:col-span-3"
+      >
         <Input type="date" {...register("contractStart")} />
       </Field>
 
       <div className="flex flex-col gap-1.5 sm:col-span-6">
-        <span className="text-xs font-medium text-slate-600">Módulos contratados *</span>
+        <span className="text-xs font-medium text-slate-600">
+          {eventual ? "Serviços prestados *" : "Módulos contratados *"}
+        </span>
         <Controller
           control={control}
           name="modules"
@@ -158,23 +210,79 @@ export function ClientForm({
         )}
       </div>
 
-      <Field
-        label="Honorários mensais (R$) *"
-        error={errors.monthlyFee?.message}
-        hint={editing ? "Alterar o valor não muda cobranças já emitidas." : undefined}
-        className="sm:col-span-2"
-      >
-        <Input inputMode="decimal" placeholder="1.200,00" {...register("monthlyFee")} />
-      </Field>
-      <Field label="Dia do vencimento *" error={errors.feeDueDay?.message} className="sm:col-span-2">
-        <Input inputMode="numeric" {...register("feeDueDay")} />
-      </Field>
-      <Field label="Situação *" className="sm:col-span-2">
+      {!eventual && (
+        <>
+          <Field
+            label="Honorários mensais (R$) *"
+            error={errors.monthlyFee?.message}
+            hint={editing ? "Alterar o valor não muda cobranças já emitidas." : undefined}
+            className="sm:col-span-2"
+          >
+            <Input inputMode="decimal" placeholder="1.200,00" {...register("monthlyFee")} />
+          </Field>
+          <Field label="Dia do vencimento *" error={errors.feeDueDay?.message} className="sm:col-span-2">
+            <Input inputMode="numeric" {...register("feeDueDay")} />
+          </Field>
+        </>
+      )}
+
+      <Field label="Situação *" className={eventual ? "sm:col-span-6" : "sm:col-span-2"}>
         <Select {...register("active")}>
           <option value="true">Ativo</option>
           <option value="false">Inativo</option>
         </Select>
       </Field>
+
+      {eventual && !editing && (
+        <section className="grid gap-4 rounded-lg border border-line bg-surface/60 p-4 sm:col-span-6 sm:grid-cols-6">
+          <h3 className="text-sm font-semibold text-navy sm:col-span-6">Pagamento do serviço avulso</h3>
+          <Field label="Descrição do serviço *" error={errors.serviceDescription?.message} className="sm:col-span-6">
+            <Input placeholder="Ex.: Declaração de Imposto de Renda" {...register("serviceDescription")} />
+          </Field>
+          <Field label="Valor total (R$) *" error={errors.serviceTotal?.message} className="sm:col-span-2">
+            <Input inputMode="decimal" placeholder="600,00" {...register("serviceTotal")} />
+          </Field>
+          <Field label="Forma de pagamento *" error={errors.installments?.message} className="sm:col-span-2">
+            <Select {...register("installments")}>
+              <option value="1">À vista</option>
+              {[2, 3, 4, 5].map((n) => (
+                <option key={n} value={n}>
+                  Parcelado em {n}x
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field
+            label={installments > 1 ? "Vencimento da 1ª parcela *" : "Data de vencimento *"}
+            error={errors.firstDueDate?.message}
+            className="sm:col-span-2"
+          >
+            <Input type="date" {...register("firstDueDate")} />
+          </Field>
+          {preview.length > 0 && (
+            <div className="sm:col-span-6" aria-live="polite">
+              <p className="mb-1.5 text-xs text-slate-500">
+                {installments > 1
+                  ? "As parcelas vencem todo mês no mesmo dia da primeira e podem ser pagas antes do vencimento."
+                  : "Pagamento à vista. Pode ser registrado antes do vencimento."}
+              </p>
+              <ul className="divide-y divide-line rounded-md border border-line bg-white text-sm">
+                {preview.map((p) => (
+                  <li key={p.number} className="flex items-center justify-between px-3 py-1.5">
+                    <span>{installments > 1 ? `Parcela ${p.number}/${installments}` : "À vista"} · vence {formatDate(p.dueDate)}</span>
+                    <span className="font-semibold">{formatBRL(p.amountCents)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
+      )}
+      {eventual && editing && (
+        <p className="rounded-md bg-surface px-3 py-2 text-xs text-slate-600 sm:col-span-6">
+          O serviço avulso e as parcelas deste cliente são gerenciados em <strong>Contas a Receber</strong>.
+        </p>
+      )}
 
       <Field label="Observações internas" className="sm:col-span-6">
         <Textarea {...register("notes")} />

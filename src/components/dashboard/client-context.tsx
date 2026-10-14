@@ -54,7 +54,7 @@ export function ClientContext({
           <dd className="font-medium">{TAX_REGIME_LABEL[c.taxRegime]}</dd>
         </div>
         <div>
-          <dt className="text-xs text-slate-500">Honorários mensais</dt>
+          <dt className="text-xs text-slate-500">{c.kind === "EVENTUAL" ? "Cliente eventual" : "Honorários mensais"}</dt>
           <dd>
             <button
               type="button"
@@ -62,13 +62,13 @@ export function ClientContext({
               className="font-bold text-primary underline-offset-2 hover:underline"
               title="Ver histórico de cobranças"
             >
-              {formatBRL(c.monthlyFeeCents)}
+              {c.kind === "EVENTUAL" ? "Ver parcelas do serviço" : formatBRL(c.monthlyFeeCents)}
             </button>
-            <span className="ml-1 text-xs text-slate-500">· vence dia {c.feeDueDay}</span>
+            {c.kind === "FIXO" && <span className="ml-1 text-xs text-slate-500">· vence dia {c.feeDueDay}</span>}
           </dd>
         </div>
         <div>
-          <dt className="text-xs text-slate-500">Contrato desde</dt>
+          <dt className="text-xs text-slate-500">{c.kind === "EVENTUAL" ? "Data do serviço" : "Contrato desde"}</dt>
           <dd className="font-medium">{formatDate(c.contractStart)}</dd>
         </div>
         <div className="sm:col-span-2">

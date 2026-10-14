@@ -86,6 +86,18 @@ export async function getReceivable(id: string): Promise<Receivable | null> {
   return data ? rowToReceivable(data as unknown as ReceivableRow) : null;
 }
 
+/** Uma parcela de um serviço avulso (por grupo e número). */
+export async function getInstallment(groupId: string, number = 1): Promise<Receivable | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("receivables")
+    .select(RECEIVABLE_SELECT)
+    .eq("installment_group_id", groupId)
+    .eq("installment_number", number)
+    .maybeSingle();
+  return data ? rowToReceivable(data as unknown as ReceivableRow) : null;
+}
+
 export async function getPayable(id: string): Promise<Payable | null> {
   const supabase = await createClient();
   const { data } = await supabase

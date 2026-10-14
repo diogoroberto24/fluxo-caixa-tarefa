@@ -124,11 +124,12 @@ export function ClientSearch({
                             onOpenFees(c.id);
                           }}
                           onKeyDown={(e) => e.stopPropagation()}
-                          title="Ver histórico de honorários"
+                          title={c.kind === "EVENTUAL" ? "Ver parcelas do serviço" : "Ver histórico de honorários"}
                           className="font-semibold text-primary underline-offset-2 hover:underline"
                         >
-                          {formatBRL(c.monthlyFeeCents)}
+                          {c.kind === "EVENTUAL" ? (fin.currentCharge ? formatBRL(fin.currentCharge.amountCents) : "Avulso") : formatBRL(c.monthlyFeeCents)}
                         </button>
+                        {c.kind === "EVENTUAL" && <Badge tone="warning">Eventual</Badge>}
                         {fin.currentStatus && <ChargeBadge status={fin.currentStatus} />}
                       </div>
                       <div className="text-xs md:text-[13px]"><span className="text-slate-500 md:hidden">Venc.: </span>{formatDate(fin.currentCharge?.dueDate)}</div>

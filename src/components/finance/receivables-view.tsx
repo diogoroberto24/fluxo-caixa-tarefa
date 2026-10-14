@@ -223,7 +223,7 @@ export function ReceivablesView() {
                   <div><ChargeBadge status={st} /></div>
                   <div className="flex gap-1.5 md:justify-end">
                     {isOpen(st) && canPay && (
-                      <Button size="icon" variant="outline" aria-label={`Registrar pagamento de ${client?.tradeName ?? ""} ${competenceLabel(r.competence)}`} title="Registrar pagamento" onClick={() => setPayId(r.id)}>
+                      <Button size="icon" variant="outline" aria-label={`${r.dueDate > today ? "Antecipar" : "Registrar"} pagamento de ${client?.tradeName ?? ""} ${competenceLabel(r.competence)}`} title={r.dueDate > today ? "Antecipar pagamento" : "Registrar pagamento"} onClick={() => setPayId(r.id)}>
                         <CheckCircle2 className="h-4 w-4 text-success" />
                       </Button>
                     )}
@@ -274,7 +274,7 @@ export function ReceivablesView() {
         <PayDialog
           open
           onClose={() => setPayId(null)}
-          title="Registrar pagamento"
+          title={payTarget.dueDate > today ? "Antecipar pagamento" : "Registrar pagamento"}
           amountCents={payTarget.amountCents}
           today={today}
           confirmLabel="Confirmar recebimento"

@@ -2,6 +2,7 @@ import { addDays, diffDays, monthOf } from "@/lib/dates";
 import type {
   ChargeStatus,
   Client,
+  ClientKind,
   Payable,
   Receivable,
 } from "@/types/domain";
@@ -138,8 +139,16 @@ export function openPayables(payables: Payable[], today: string) {
     .sort((a, b) => a.payable.dueDate.localeCompare(b.payable.dueDate));
 }
 
-/** Histórico de honorários (competência mais recente primeiro). */
-export function feeHistory(receivables: Receivable[], clientId: string) {
+/**
+ * Histórico de cobranças do cliente. FIXO: honorários por competência (mais recente primeiro).
+ * EVENTUAL: todas as cobranças do serviço avulso (parcelas), pelo vencimento mais recente.
+ */
+export function feeHistory(receivables: Receivable[], clientId: string, kind: ClientKind = "FIXO") {
+  if (kind === "EVENTUAL") {
+    return receivables
+      .filter((r) => r.clientId === clientId)
+      .sort((a, b) => b.dueDate.localeCompare(a.dueDate));
+  }
   return receivables
     .filter((r) => r.clientId === clientId && r.category === "HONORARIOS")
     .sort((a, b) => b.competence.localeCompare(a.competence));
@@ -159,6 +168,7 @@ export function clientFinancial(
   receivables: Receivable[],
   today: string,
 ): ClientFinancial {
+  if (client.kind === "EVENTUAL") return eventualFinancial(client, receivables, today);
   const fees = feeHistory(receivables, client.id);
   const currentCharge = fees.find((f) => f.competence === monthOf(today));
   const currentStatus = currentCharge
@@ -169,6 +179,21 @@ export function clientFinancial(
   if (!client.active) standing = "INATIVO";
   else if (hasOverdue) standing = "EM_ATRASO";
   else if (currentStatus === "PENDENTE") standing = "PENDENTE";
+  return { standing, currentCharge, currentStatus };
+}
+
+/** Cliente eventual: situação pelas parcelas do serviço (a próxima em aberto, ou a última). */
+function eventualFinancial(client: Client, receivables: Receivable[], today: string): ClientFinancial {
+  const mine = feeHistory(receivables, client.id, "EVENTUAL").filter((r) => !r.canceled);
+  const open = mine
+    .filter((r) => isOpen(chargeStatus(r, today)))
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+  const currentCharge = open[0] ?? mine[0];
+  const currentStatus = currentCharge ? chargeStatus(currentCharge, today) : undefined;
+  let standing: ClientStanding = "EM_DIA";
+  if (!client.active) standing = "INATIVO";
+  else if (mine.some((r) => chargeStatus(r, today) === "VENCIDO")) standing = "EM_ATRASO";
+  else if (open.length > 0) standing = "PENDENTE";
   return { standing, currentCharge, currentStatus };
 }
 

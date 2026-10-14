@@ -6,6 +6,7 @@ import { UNEXPECTED_ERROR, friendlyDbError, type ActionResult } from "@/lib/acti
 import { getCurrentUser } from "@/lib/auth/session";
 import { centsToFee } from "@/lib/data/client-mapper";
 import {
+  getInstallment,
   getPayable,
   getReceivable,
   insertReceivable,
@@ -53,6 +54,23 @@ export async function createReceivableAction(
     return { ok: false, error: i.message, field: i.path[0] as keyof ReceivableFormValues };
   }
   const v = parsed.data;
+  const installments = Number(v.installments ?? "1");
+
+  // Serviço avulso parcelado (2 a 5x): função SQL cria todas as parcelas na mesma transação.
+  if (installments > 1) {
+    const { data: group, error: e } = await rpc<string>("create_installments", {
+      p_client_id: v.clientId,
+      p_description: v.description,
+      p_total: centsToFee(parseMoneyToCents(v.amount) ?? 0),
+      p_installments: installments,
+      p_first_due: v.dueDate,
+    });
+    if (e || !group) return { ok: false, error: e ? friendlyDbError(e) : UNEXPECTED_ERROR };
+    const first = await getInstallment(group, 1);
+    refresh();
+    return first ? { ok: true, data: first } : { ok: false, error: UNEXPECTED_ERROR };
+  }
+
   const { id, error } = await insertReceivable({
     clientId: v.clientId,
     description: v.description,
