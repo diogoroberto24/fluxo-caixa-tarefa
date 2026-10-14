@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
+import { useState } from "react";
 import { useAppStore } from "@/components/providers/app-store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,10 @@ export function ClientForm({
   client?: Client;
   onDone: (client: Client) => void;
 }) {
-  const { saveClient, clients, notify, today } = useAppStore();
+  const { saveClient, addService, clients, notify, today } = useAppStore();
+  /** Cliente eventual que já existe (mesmo CPF/CNPJ): oferece lançar o serviço nele. */
+  const [returning, setReturning] = useState<Client | null>(null);
+  const [launching, setLaunching] = useState(false);
   const editing = !!client;
   const {
     register,
@@ -37,6 +41,7 @@ export function ClientForm({
     handleSubmit,
     setError,
     watch,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<ClientFormValues>({
     resolver: zodResolver(editing ? clientSchema : clientCreateSchema),
@@ -65,7 +70,12 @@ export function ClientForm({
 
   async function onSubmit(v: ClientFormValues) {
     const doc = onlyDigits(v.document);
-    if (clients.some((c) => c.document === doc && c.id !== client?.id)) {
+    const existing = clients.find((c) => c.document === doc && c.id !== client?.id);
+    if (existing && !editing && v.kind === "EVENTUAL") {
+      setReturning(existing);
+      return;
+    }
+    if (existing) {
       setError("document", { message: "Já existe um cliente com este CNPJ/CPF." });
       notify("Cliente já cadastrado com este documento.", "error");
       return;
@@ -82,6 +92,25 @@ export function ClientForm({
         : `Cliente "${result.data.tradeName}" cadastrado com sucesso.`,
     );
     onDone(result.data);
+  }
+
+  async function launchOnExisting() {
+    if (!returning) return;
+    const v = getValues();
+    setLaunching(true);
+    const r = await addService(returning.id, {
+      description: v.serviceDescription ?? "",
+      total: v.serviceTotal ?? "",
+      installments: v.installments ?? "1",
+      firstDueDate: v.firstDueDate ?? "",
+    });
+    setLaunching(false);
+    if (!r.ok) {
+      notify(r.error, "error");
+      return;
+    }
+    notify(`Serviço lançado para "${returning.tradeName}". O cadastro dele não foi alterado.`);
+    onDone(returning);
   }
 
   return (
@@ -287,6 +316,33 @@ export function ClientForm({
       <Field label="Observações internas" className="sm:col-span-6">
         <Textarea {...register("notes")} />
       </Field>
+
+      {returning && (
+        <div role="alert" className="rounded-lg border border-warning-line bg-warning-soft p-4 text-sm sm:col-span-6">
+          <p className="font-semibold text-navy">Este CPF/CNPJ já está cadastrado: {returning.tradeName}</p>
+          {returning.active ? (
+            <>
+              <p className="mt-1 text-slate-700">
+                Deseja lançar este serviço para ele? O cadastro dele <strong>não será alterado</strong>; só as cobranças do
+                serviço ({installments > 1 ? `${installments} parcelas` : "à vista"}) serão criadas.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button type="button" size="sm" onClick={launchOnExisting} disabled={launching}>
+                  {launching && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  Lançar serviço para {returning.tradeName}
+                </Button>
+                <Button type="button" size="sm" variant="outline" onClick={() => setReturning(null)} disabled={launching}>
+                  Voltar e corrigir o documento
+                </Button>
+              </div>
+            </>
+          ) : (
+            <p className="mt-1 text-slate-700">
+              Este cliente está <strong>inativo</strong>. Reative-o em Clientes antes de lançar um novo serviço.
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="flex justify-end gap-2 sm:col-span-6">
         <Button type="submit" disabled={isSubmitting}>

@@ -8,6 +8,7 @@ import {
   HandCoins,
   History,
   Loader2,
+  Pencil,
   Plus,
   RefreshCw,
   Search,
@@ -27,9 +28,10 @@ import { can } from "@/lib/permissions";
 import { cn, normalize } from "@/lib/utils";
 import { chargeStatus, isOpen } from "@/services/finance";
 import type { ChargeStatus, Receivable } from "@/types/domain";
+import { EditServiceDialog } from "./service-dialogs";
 import { CancelDialog, HistoryList, PayDialog, StatCard } from "./shared";
 
-const COLS = "md:grid-cols-[1.4fr_1.5fr_0.8fr_0.8fr_0.9fr_0.9fr_0.9fr_0.8fr_120px]";
+const COLS = "md:grid-cols-[1.4fr_1.5fr_0.8fr_0.8fr_0.9fr_0.9fr_0.9fr_0.8fr_160px]";
 const CATEGORY_LABEL = { HONORARIOS: "Honorários", OUTROS: "Outros" } as const;
 
 export function ReceivablesView() {
@@ -39,6 +41,8 @@ export function ReceivablesView() {
   } = useAppStore();
   const canWrite = can(currentUser.role, "receivable:write");
   const canPay = can(currentUser.role, "receivable:pay");
+  const canService = can(currentUser.role, "service:edit");
+  const [serviceId, setServiceId] = useState<string | null>(null);
 
   const [competence, setCompetence] = useState(monthOf(today));
   const [clientId, setClientId] = useState("");
@@ -230,6 +234,11 @@ export function ReceivablesView() {
                     <Button size="icon" variant="outline" aria-label="Ver detalhes" title="Detalhes" onClick={() => setDetailId(r.id)}>
                       <Eye className="h-4 w-4" />
                     </Button>
+                    {isOpen(st) && canService && r.installmentGroupId && (
+                      <Button size="icon" variant="outline" aria-label="Editar serviço" title="Editar serviço (reparcelar saldo)" onClick={() => setServiceId(r.installmentGroupId!)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
                     {st !== "PAGO" && st !== "CANCELADO" && canWrite && (
                       <Button size="icon" variant="outline" aria-label="Cancelar cobrança" title="Cancelar cobrança" onClick={() => setCancelId(r.id)}>
                         <Ban className="h-4 w-4 text-danger" />
@@ -307,6 +316,8 @@ export function ReceivablesView() {
           }}
         />
       )}
+
+      <EditServiceDialog groupId={serviceId} onClose={() => setServiceId(null)} />
 
       <DetailDialog receivable={detail} client={detail ? nameOf(detail.clientId) : ""} today={today} onClose={() => setDetailId(null)} />
 

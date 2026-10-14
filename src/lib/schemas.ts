@@ -121,6 +121,23 @@ export const receivableSchema = z.object({
 });
 export type ReceivableFormValues = z.infer<typeof receivableSchema>;
 
+/** Serviço avulso (novo ou editado): descrição, valor total, parcelas (1 = à vista) e 1º vencimento. */
+export const serviceSchema = z
+  .object({
+    description: required("Informe a descrição do serviço."),
+    total: z.string().trim().min(1, "Informe o valor do serviço."),
+    installments: z.string(),
+    firstDueDate: isoDate("Informe a data de vencimento."),
+  })
+  .superRefine((v, ctx) => {
+    const cents = parseMoneyToCents(v.total);
+    const n = Number(v.installments);
+    if (v.total && (cents === null || cents <= 0)) fail(ctx, "total", "Informe um valor válido maior que zero (ex.: 1.234,56).");
+    if (!Number.isInteger(n) || n < 1 || n > MAX_INSTALLMENTS) fail(ctx, "installments", "Escolha de 1 a 5 parcelas.");
+    else if (cents !== null && cents > 0 && cents < n) fail(ctx, "total", "Valor muito baixo para o número de parcelas.");
+  });
+export type ServiceFormValues = z.infer<typeof serviceSchema>;
+
 export const payableSchema = z.object({
   description: required("Informe a descrição."),
   categoryId: required("Selecione a categoria."),

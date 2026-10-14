@@ -197,6 +197,25 @@ function eventualFinancial(client: Client, receivables: Receivable[], today: str
   return { standing, currentCharge, currentStatus };
 }
 
+/** Resumo de um serviço avulso (grupo de parcelas ativas), para exibir e editar. */
+export function serviceGroup(receivables: Receivable[], groupId: string) {
+  const items = receivables
+    .filter((r) => r.installmentGroupId === groupId && !r.canceled)
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+  const paid = items.filter((r) => r.paidAt);
+  const open = items.filter((r) => !r.paidAt);
+  return {
+    items,
+    paid,
+    open,
+    clientId: items[0]?.clientId,
+    paidCents: paid.reduce((s, r) => s + (r.paidAmountCents ?? r.amountCents), 0),
+    totalCents: items.reduce((s, r) => s + r.amountCents, 0),
+    description: (items[0]?.description ?? "").replace(/ — parcela \d+\/\d+$/, ""),
+    firstOpenDue: open[0]?.dueDate,
+  };
+}
+
 export function daysUntil(dueDate: string, today: string) {
   return diffDays(dueDate, today);
 }

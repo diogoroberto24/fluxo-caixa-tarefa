@@ -78,6 +78,8 @@ export interface Receivable {
   paidAt?: string;
   paidAmountCents?: number;
   /** Parcela i de N de um serviço avulso (ausente em cobranças comuns). */
+  /** Identifica o serviço avulso (todas as parcelas do mesmo serviço compartilham o grupo). */
+  installmentGroupId?: string;
   installmentNumber?: number;
   installmentTotal?: number;
   notes?: string;

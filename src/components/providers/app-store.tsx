@@ -16,6 +16,8 @@ import {
   setClientActiveAction,
 } from "@/app/(app)/clientes/actions";
 import {
+  addServiceAction,
+  updateServiceAction,
   cancelPayableAction,
   cancelReceivableAction,
   createPayableAction,
@@ -38,6 +40,7 @@ import type {
   ClientFormValues,
   PayableFormValues,
   ReceivableFormValues,
+  ServiceFormValues,
   TaskFormValues,
 } from "@/lib/schemas";
 import type {
@@ -124,6 +127,9 @@ interface AppStore extends State {
   payReceivable: (id: string, opts?: PaymentOpts) => Result<{ receivable: Receivable; alreadyPaid: boolean }>;
   cancelReceivable: (id: string, reason: string) => Result<Receivable>;
   generateFees: (competence: string | null) => Result<{ created: number }>;
+  // serviço avulso (cliente eventual)
+  addService: (clientId: string, values: ServiceFormValues) => Result<{ created: number }, keyof ServiceFormValues>;
+  updateService: (groupId: string, values: ServiceFormValues) => Result<{ created: number }, keyof ServiceFormValues>;
   // contas a pagar
   createPayable: (values: PayableFormValues) => Result<{ id: string; payable: Payable | null }, keyof PayableFormValues>;
   updatePayable: (id: string, values: PayableFormValues) => Result<Payable, keyof PayableFormValues>;
@@ -224,6 +230,8 @@ export function AppStoreProvider({
         return r;
       },
       generateFees: (competence) => generateFeesAction(competence),
+      addService: (clientId, values) => addServiceAction(clientId, values),
+      updateService: (groupId, values) => updateServiceAction(groupId, values),
 
       createPayable: async (values) => {
         const r = await createPayableAction(values);

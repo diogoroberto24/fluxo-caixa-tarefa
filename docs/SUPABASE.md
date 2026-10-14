@@ -34,6 +34,7 @@ Projeto próprio do escritório, região São Paulo, com Data API **ligada**,
 
 10. `supabase/migrations/20261016000001_regime_pessoa_fisica.sql` (regime Pessoa Física/Autônomo)
 11. `supabase/migrations/20261017000001_clientes_eventuais.sql` (clientes eventuais e serviço parcelado)
+12. `supabase/migrations/20261018000001_editar_servico_avulso.sql` (editar/reparcelar serviço avulso)
 
 Cada uma deve terminar com "Success. No rows returned". Rodar de novo gera erro "já existe" (esperado, sem dano).
 Confira em **Table Editor**: `profiles`, `clients`, `client_fee_history`, `audit_log`, `financial_categories`,
@@ -83,7 +84,10 @@ Depois, em **Authentication → URL Configuration**, ajuste o *Site URL* para o 
 - **Eventual:** serviço avulso. Nunca gera mensalidade (`generate_monthly_fees` ignora). No cadastro informa-se a descrição, o valor total, à vista ou 2 a 5 parcelas e o vencimento (da 1ª parcela).
 - **Parcelas:** vencem todo mês no dia do 1º vencimento (mês curto usa o último dia). Os centavos que sobram ficam na 1ª parcela; a soma é sempre o total.
 - **Antecipação:** qualquer parcela em aberto pode ser paga antes do vencimento (botão "Antecipar pagamento").
-- O tipo é definido no cadastro e não muda depois. Novo serviço para o mesmo cliente: Contas a Receber → Nova cobrança → Forma de pagamento.
+- O tipo é definido no cadastro e não muda depois.
+- **Cliente eventual que volta:** ao cadastrar com um CPF/CNPJ já existente, o sistema oferece lançar o serviço no cadastro existente (que não é alterado). Também: Clientes → detalhe → **Novo serviço**, ou Contas a Receber → Nova cobrança.
+- **Editar serviço (reparcelar):** só o saldo em aberto. Parcelas pagas não mudam; as em aberto são canceladas (ficam no histórico) e recriadas no novo plano. O valor total precisa ser maior que o já pago e o serviço tem no máximo 5 parcelas no total (pagas + novas).
+- Perfis: ADMIN, FINANCEIRO e CONTADOR lançam e editam serviço.
 
 ## Backup
 O plano gratuito tem backups limitados. Veja `npm run backup` e `npm run restore` em `docs/DEPLOY.md`.

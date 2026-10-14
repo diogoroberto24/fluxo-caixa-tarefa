@@ -5,6 +5,8 @@ export type Permission =
   | "receivable:read"
   | "receivable:write"
   | "receivable:pay"
+  /** Lançar novo serviço avulso e editar (reparcelar) serviço existente. */
+  | "service:edit"
   | "payable:read"
   | "payable:write"
   | "task:write"
@@ -18,6 +20,7 @@ export type Permission =
  */
 const MATRIX: Record<Role, Permission[]> = {
   ADMIN: [
+    "service:edit",
     "client:write",
     "receivable:read",
     "receivable:write",
@@ -29,8 +32,9 @@ const MATRIX: Record<Role, Permission[]> = {
     "report:view",
     "settings:manage",
   ],
-  CONTADOR: ["client:write", "receivable:read", "task:write", "task:update", "report:view"],
+  CONTADOR: ["service:edit", "client:write", "receivable:read", "task:write", "task:update", "report:view"],
   FINANCEIRO: [
+    "service:edit",
     "receivable:read",
     "receivable:write",
     "receivable:pay",

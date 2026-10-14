@@ -19,8 +19,10 @@ import { can, type Permission } from "@/lib/permissions";
 import {
   payableSchema,
   receivableSchema,
+  serviceSchema,
   type PayableFormValues,
   type ReceivableFormValues,
+  type ServiceFormValues,
 } from "@/lib/schemas";
 import type { Payable, Receivable } from "@/types/domain";
 
@@ -151,6 +153,60 @@ export async function generateFeesAction(
   if (error) return { ok: false, error: friendlyDbError(error) };
   if ((data ?? 0) > 0) refresh();
   return { ok: true, data: { created: data ?? 0 } };
+}
+
+// ============================================================== serviço avulso
+
+/** Lança um novo serviço avulso (à vista ou parcelado) para um cliente que já existe. */
+export async function addServiceAction(
+  clientId: string,
+  values: ServiceFormValues,
+): Promise<ActionResult<{ created: number }, keyof ServiceFormValues>> {
+  const denied = await authorize("service:edit");
+  if (denied) return { ok: false, error: denied };
+  if (!idSchema.safeParse(clientId).success) return { ok: false, error: "Cliente inválido." };
+  const parsed = serviceSchema.safeParse(values);
+  if (!parsed.success) {
+    const i = parsed.error.issues[0];
+    return { ok: false, error: i.message, field: i.path[0] as keyof ServiceFormValues };
+  }
+  const v = parsed.data;
+  const { error } = await rpc<string>("create_installments", {
+    p_client_id: clientId,
+    p_description: v.description,
+    p_total: centsToFee(parseMoneyToCents(v.total) ?? 0),
+    p_installments: Number(v.installments),
+    p_first_due: v.firstDueDate,
+  });
+  if (error) return { ok: false, error: friendlyDbError(error) };
+  refresh();
+  return { ok: true, data: { created: Number(v.installments) } };
+}
+
+/** Edita o serviço: reparcela o saldo em aberto (parcelas pagas não mudam). */
+export async function updateServiceAction(
+  groupId: string,
+  values: ServiceFormValues,
+): Promise<ActionResult<{ created: number }, keyof ServiceFormValues>> {
+  const denied = await authorize("service:edit");
+  if (denied) return { ok: false, error: denied };
+  if (!idSchema.safeParse(groupId).success) return { ok: false, error: "Serviço inválido." };
+  const parsed = serviceSchema.safeParse(values);
+  if (!parsed.success) {
+    const i = parsed.error.issues[0];
+    return { ok: false, error: i.message, field: i.path[0] as keyof ServiceFormValues };
+  }
+  const v = parsed.data;
+  const { error } = await rpc<string>("update_installment_plan", {
+    p_group: groupId,
+    p_description: v.description,
+    p_total: centsToFee(parseMoneyToCents(v.total) ?? 0),
+    p_installments: Number(v.installments),
+    p_first_due: v.firstDueDate,
+  });
+  if (error) return { ok: false, error: friendlyDbError(error) };
+  refresh();
+  return { ok: true, data: { created: Number(v.installments) } };
 }
 
 // =============================================================== contas a pagar

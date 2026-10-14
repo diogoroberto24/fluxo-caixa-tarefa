@@ -1,10 +1,13 @@
 "use client";
 
-import { Mail, MapPin, Phone } from "lucide-react";
+import { Mail, MapPin, Pencil, Phone, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAppStore } from "@/components/providers/app-store";
 import { Badge, ChargeBadge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
+import { EditServiceDialog, NewServiceDialog } from "@/components/finance/service-dialogs";
+import { can } from "@/lib/permissions";
 import type { FeeHistoryEntry } from "@/lib/data/clients";
 import { formatAddress, formatBRL, formatDate, formatDocument, formatPhone } from "@/lib/format";
 import { MODULE_LABEL, TAX_REGIME_LABEL } from "@/services/clients";
@@ -18,7 +21,10 @@ export function ClientDetailDialog({
   client: Client | null;
   onClose: () => void;
 }) {
-  const { loadFeeHistory, receivables, today } = useAppStore();
+  const { loadFeeHistory, receivables, today, currentUser } = useAppStore();
+  const canService = can(currentUser.role, "service:edit");
+  const [newService, setNewService] = useState<string | null>(null);
+  const [editService, setEditService] = useState<string | null>(null);
   const [history, setHistory] = useState<FeeHistoryEntry[] | null>(null);
   const [historyError, setHistoryError] = useState(false);
   const clientId = client?.id;
@@ -82,7 +88,14 @@ export function ClientDetailDialog({
 
           {client.kind === "EVENTUAL" ? (
             <div>
-              <h3 className="mb-2 text-sm font-semibold text-navy">Serviço avulso e parcelas</h3>
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold text-navy">Serviço avulso e parcelas</h3>
+                {canService && client.active && (
+                  <Button size="sm" variant="outline" onClick={() => setNewService(client.id)}>
+                    <Plus className="h-3.5 w-3.5" /> Novo serviço
+                  </Button>
+                )}
+              </div>
               {(() => {
                 const items = feeHistory(receivables, client.id, "EVENTUAL").slice().reverse();
                 if (items.length === 0) return <p className="text-sm text-slate-500">Nenhuma cobrança lançada para este cliente.</p>;
@@ -99,6 +112,11 @@ export function ClientDetailDialog({
                         <span className="flex items-center gap-3">
                           <span className="font-semibold">{formatBRL(r.amountCents)}</span>
                           <ChargeBadge status={chargeStatus(r, today)} />
+                          {canService && r.installmentGroupId && !r.paidAt && !r.canceled && (
+                            <Button size="icon" variant="outline" className="h-7 w-7" aria-label="Editar serviço" title="Editar serviço (reparcelar saldo)" onClick={() => setEditService(r.installmentGroupId!)}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
                         </span>
                       </li>
                     ))}
@@ -136,6 +154,8 @@ export function ClientDetailDialog({
           )}
         </div>
       )}
+      <NewServiceDialog clientId={newService} onClose={() => setNewService(null)} />
+      <EditServiceDialog groupId={editService} onClose={() => setEditService(null)} />
     </Dialog>
   );
 }
