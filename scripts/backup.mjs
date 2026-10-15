@@ -17,6 +17,7 @@ export const TABLES = [
   "receivables",
   "payables",
   "payments",
+  "task_types",
   "task_definitions",
   "task_executions",
   "audit_log",

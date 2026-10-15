@@ -3,7 +3,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { lookupCepAction } from "@/app/(app)/clientes/actions";
 import { useAppStore } from "@/components/providers/app-store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { formatBRL, formatDate } from "@/lib/format";
 import { planInstallments } from "@/lib/installments";
 import { parseMoneyToCents } from "@/lib/money";
 import { clientCreateSchema, clientSchema, type ClientFormValues } from "@/lib/schemas";
+import { maskDocument, maskPhone, maskZip } from "@/lib/masks";
 import { onlyDigits } from "@/lib/validators";
 import { MODULE_LABEL, TAX_REGIME_LABEL } from "@/services/clients";
 import type { Client, ClientKind, ServiceModule, TaxRegime } from "@/types/domain";
@@ -42,6 +44,8 @@ export function ClientForm({
     setError,
     watch,
     getValues,
+    setValue,
+    setFocus,
     formState: { errors, isSubmitting },
   } = useForm<ClientFormValues>({
     resolver: zodResolver(editing ? clientSchema : clientCreateSchema),
@@ -60,6 +64,56 @@ export function ClientForm({
           firstDueDate: today,
         },
   });
+
+  // ---- CEP: preenche rua, bairro, cidade e UF sem sobrescrever o que o usuário digitou
+  type CepStatus = "idle" | "loading" | "ok" | "partial" | "notfound" | "error";
+  const [cepStatus, setCepStatus] = useState<CepStatus>("idle");
+  const zipDigits = onlyDigits(watch("zip") ?? "");
+  const lastLookup = useRef(editing && client ? onlyDigits(client.address.zip) : "");
+  const autoFilled = useRef<Partial<Record<"street" | "district" | "city" | "state", string>>>(
+    editing ? {} : { state: "PR" },
+  );
+
+  useEffect(() => {
+    if (zipDigits.length !== 8) {
+      setCepStatus("idle");
+      return;
+    }
+    if (zipDigits === lastLookup.current) return;
+    lastLookup.current = zipDigits;
+    let cancelled = false;
+    setCepStatus("loading");
+    lookupCepAction(zipDigits).then((r) => {
+      if (cancelled) return;
+      if (!r.ok) return setCepStatus("error");
+      if (!r.data) return setCepStatus("notfound");
+      for (const f of ["street", "district", "city", "state"] as const) {
+        const value = r.data[f];
+        const current = getValues(f);
+        // só preenche campo vazio ou que foi preenchido por uma busca anterior
+        if (value && (!current || current === autoFilled.current[f])) {
+          setValue(f, value, { shouldValidate: true, shouldDirty: true });
+          autoFilled.current[f] = value;
+        }
+      }
+      setCepStatus(r.data.street ? "ok" : "partial");
+      setFocus(r.data.street ? "number" : "street");
+    });
+    return () => {
+      cancelled = true;
+    };
+    // getValues/setValue/setFocus são estáveis
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zipDigits]);
+
+  const cepHint: Record<CepStatus, string | undefined> = {
+    idle: undefined,
+    loading: "Buscando endereço…",
+    ok: "Endereço preenchido. Confira e informe o número.",
+    partial: "CEP geral da cidade: preencha rua e bairro.",
+    notfound: "CEP não encontrado. Preencha o endereço manualmente.",
+    error: "Consulta de CEP indisponível. Preencha manualmente.",
+  };
 
   const kind = watch("kind");
   const eventual = kind === "EVENTUAL";
@@ -148,7 +202,21 @@ export function ClientForm({
       </Field>
 
       <Field label="CNPJ ou CPF *" error={errors.document?.message} className="sm:col-span-2">
-        <Input inputMode="numeric" placeholder="Somente números ou formatado" {...register("document")} />
+        <Controller
+          control={control}
+          name="document"
+          render={({ field }) => (
+            <Input
+              ref={field.ref}
+              inputMode="numeric"
+              autoComplete="off"
+              placeholder="000.000.000-00 ou 00.000.000/0000-00"
+              value={field.value ?? ""}
+              onBlur={field.onBlur}
+              onChange={(e) => field.onChange(maskDocument(e.target.value))}
+            />
+          )}
+        />
       </Field>
       <Field label="Inscrição estadual" className="sm:col-span-2">
         <Input {...register("stateRegistration")} />
@@ -157,8 +225,22 @@ export function ClientForm({
         <Input {...register("municipalRegistration")} />
       </Field>
 
-      <Field label="CEP *" error={errors.zip?.message} className="sm:col-span-2">
-        <Input inputMode="numeric" {...register("zip")} />
+      <Field label="CEP *" error={errors.zip?.message} hint={cepHint[cepStatus]} className="sm:col-span-2">
+        <Controller
+          control={control}
+          name="zip"
+          render={({ field }) => (
+            <Input
+              ref={field.ref}
+              inputMode="numeric"
+              autoComplete="postal-code"
+              placeholder="00000-000"
+              value={field.value ?? ""}
+              onBlur={field.onBlur}
+              onChange={(e) => field.onChange(maskZip(e.target.value))}
+            />
+          )}
+        />
       </Field>
       <Field label="Logradouro *" error={errors.street?.message} className="sm:col-span-3">
         <Input {...register("street")} />
@@ -180,7 +262,21 @@ export function ClientForm({
       </Field>
 
       <Field label="Telefone *" error={errors.phone?.message} className="sm:col-span-2">
-        <Input inputMode="tel" {...register("phone")} />
+        <Controller
+          control={control}
+          name="phone"
+          render={({ field }) => (
+            <Input
+              ref={field.ref}
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="(00) 00000-0000"
+              value={field.value ?? ""}
+              onBlur={field.onBlur}
+              onChange={(e) => field.onChange(maskPhone(e.target.value))}
+            />
+          )}
+        />
       </Field>
       <Field label="E-mail *" error={errors.email?.message} className="sm:col-span-4">
         <Input type="email" {...register("email")} />

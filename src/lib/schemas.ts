@@ -150,14 +150,23 @@ export const payableSchema = z.object({
 });
 export type PayableFormValues = z.infer<typeof payableSchema>;
 
+/** Lançar tarefa para um cliente: vincula um item do catálogo (sem texto livre). */
 export const taskSchema = z.object({
   clientId: required("Selecione o cliente."),
-  title: required("Informe o nome da tarefa."),
-  category: required("Selecione a categoria."),
-  description: optional,
+  taskTypeId: required("Selecione a tarefa."),
   dueDate: isoDate("Informe o prazo."),
   assigneeId: optional,
   recurrence: z.enum(recurrenceValues),
+  /** Observação opcional da tarefa. */
   notes: optional,
 });
 export type TaskFormValues = z.infer<typeof taskSchema>;
+
+/** Item do cadastro (catálogo) de tarefas. */
+export const taskTypeSchema = z.object({
+  name: required("Informe o nome da tarefa."),
+  category: required("Selecione a categoria."),
+  description: optional,
+  active: z.enum(["true", "false"]),
+});
+export type TaskTypeFormValues = z.infer<typeof taskTypeSchema>;

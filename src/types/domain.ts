@@ -113,6 +113,15 @@ export interface Payable {
   isDemo: boolean;
 }
 
+/** Item do cadastro (catálogo) de tarefas do escritório. */
+export interface TaskType {
+  id: string;
+  name: string;
+  category: string;
+  description?: string;
+  active: boolean;
+}
+
 export type TaskStatus = "PENDENTE" | "EM_ANDAMENTO" | "CONCLUIDA" | "CANCELADA";
 
 /** Uma ocorrência (execução) de uma tarefa. O histórico de um cliente/tarefa é a lista de execuções. */

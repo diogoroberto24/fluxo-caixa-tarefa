@@ -35,6 +35,7 @@ Projeto próprio do escritório, região São Paulo, com Data API **ligada**,
 10. `supabase/migrations/20261016000001_regime_pessoa_fisica.sql` (regime Pessoa Física/Autônomo)
 11. `supabase/migrations/20261017000001_clientes_eventuais.sql` (clientes eventuais e serviço parcelado)
 12. `supabase/migrations/20261018000001_editar_servico_avulso.sql` (editar/reparcelar serviço avulso)
+13. `supabase/migrations/20261019000001_catalogo_tarefas.sql` (cadastro/catálogo de tarefas)
 
 Cada uma deve terminar com "Success. No rows returned". Rodar de novo gera erro "já existe" (esperado, sem dano).
 Confira em **Table Editor**: `profiles`, `clients`, `client_fee_history`, `audit_log`, `financial_categories`,
@@ -88,6 +89,16 @@ Depois, em **Authentication → URL Configuration**, ajuste o *Site URL* para o 
 - **Cliente eventual que volta:** ao cadastrar com um CPF/CNPJ já existente, o sistema oferece lançar o serviço no cadastro existente (que não é alterado). Também: Clientes → detalhe → **Novo serviço**, ou Contas a Receber → Nova cobrança.
 - **Editar serviço (reparcelar):** só o saldo em aberto. Parcelas pagas não mudam; as em aberto são canceladas (ficam no histórico) e recriadas no novo plano. O valor total precisa ser maior que o já pago e o serviço tem no máximo 5 parcelas no total (pagas + novas).
 - Perfis: ADMIN, FINANCEIRO e CONTADOR lançam e editam serviço.
+
+## Cadastro (catálogo) de tarefas
+- Em **Tarefas → Cadastro de tarefas** o escritório cadastra as tarefas padrão (nome, categoria e descrição opcional). O catálogo **começa vazio**.
+- Ao lançar uma tarefa para um cliente escolhe-se um item do catálogo (não há mais texto livre) e, se quiser, uma **observação opcional**.
+- O nome e a categoria são copiados para a tarefa no lançamento: renomear ou inativar um item vale para os próximos lançamentos; o histórico não muda.
+- Perfis: ADMIN e CONTADOR gerenciam o catálogo e lançam/editam tarefas.
+
+## Digitação e endereço
+- CPF, CNPJ, telefone e CEP são formatados enquanto se digita; no banco ficam só os dígitos.
+- Ao completar o CEP, rua, bairro, cidade e UF são buscados no ViaCEP (consulta feita pelo servidor, com tempo limite). Se falhar, o preenchimento é manual.
 
 ## Backup
 O plano gratuito tem backups limitados. Veja `npm run backup` e `npm run restore` em `docs/DEPLOY.md`.

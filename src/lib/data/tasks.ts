@@ -1,7 +1,7 @@
 import "server-only";
 import { toBrDate } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
-import type { Recurrence, Task, TaskStatus } from "@/types/domain";
+import type { Recurrence, Task, TaskStatus, TaskType } from "@/types/domain";
 
 export interface DbError {
   code?: string;
@@ -98,6 +98,43 @@ export async function listTasks(today: string): Promise<Task[]> {
     if (data.length < PAGE) break;
   }
   return rows.map((r) => toTask(r, lastDone)).filter((t): t is Task => t !== null);
+}
+
+interface TaskTypeRow {
+  id: string;
+  name: string;
+  category: string;
+  description: string | null;
+  active: boolean;
+}
+
+const toTaskType = (r: TaskTypeRow): TaskType => ({
+  id: r.id,
+  name: r.name,
+  category: r.category,
+  description: r.description ?? undefined,
+  active: r.active,
+});
+
+/** Catálogo completo (ativos e inativos); a tela de lançamento mostra só os ativos. */
+export async function listTaskTypes(): Promise<TaskType[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("task_types")
+    .select("id, name, category, description, active")
+    .order("name");
+  if (error) throw new Error(`Falha ao carregar o cadastro de tarefas: ${error.message}`);
+  return (data as TaskTypeRow[]).map(toTaskType);
+}
+
+export async function getTaskType(id: string): Promise<TaskType | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("task_types")
+    .select("id, name, category, description, active")
+    .eq("id", id)
+    .maybeSingle();
+  return data ? toTaskType(data as TaskTypeRow) : null;
 }
 
 export async function getTask(id: string): Promise<Task | null> {

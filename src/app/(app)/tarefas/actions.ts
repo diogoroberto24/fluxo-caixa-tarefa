@@ -4,10 +4,10 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { UNEXPECTED_ERROR, friendlyDbError, type ActionResult } from "@/lib/action-result";
 import { getCurrentUser } from "@/lib/auth/session";
-import { getTask, rpc } from "@/lib/data/tasks";
+import { getTask, getTaskType, rpc } from "@/lib/data/tasks";
 import { can, type Permission } from "@/lib/permissions";
-import { taskSchema, type TaskFormValues } from "@/lib/schemas";
-import type { Task } from "@/types/domain";
+import { taskSchema, taskTypeSchema, type TaskFormValues, type TaskTypeFormValues } from "@/lib/schemas";
+import type { Task, TaskType } from "@/types/domain";
 
 async function authorize(permission: Permission): Promise<string | null> {
   const user = await getCurrentUser();
@@ -31,9 +31,7 @@ export async function createTaskAction(values: TaskFormValues): Promise<ActionRe
   const v = parsed.data;
   const { data, error } = await rpc<string>("create_task", {
     p_client_id: v.clientId,
-    p_title: v.title,
-    p_category: v.category,
-    p_description: v.description || null,
+    p_task_type_id: v.taskTypeId,
     p_due_date: v.dueDate,
     p_assignee_id: v.assigneeId || null,
     p_frequency: v.recurrence === "NONE" ? null : v.recurrence,
@@ -60,9 +58,6 @@ export async function updateTaskAction(
   const v = parsed.data;
   const { error } = await rpc("update_task", {
     p_execution_id: id,
-    p_title: v.title,
-    p_category: v.category,
-    p_description: v.description || null,
     p_due_date: v.dueDate,
     p_assignee_id: v.assigneeId || null,
     p_notes: v.notes || null,
@@ -71,6 +66,36 @@ export async function updateTaskAction(
   const task = await getTask(id);
   refresh();
   return task ? { ok: true, data: task } : { ok: false, error: UNEXPECTED_ERROR };
+}
+
+/** Cria (id = null) ou edita um item do cadastro de tarefas. */
+export async function saveTaskTypeAction(
+  id: string | null,
+  values: TaskTypeFormValues,
+): Promise<ActionResult<TaskType, keyof TaskTypeFormValues>> {
+  const denied = await authorize("task:write");
+  if (denied) return { ok: false, error: denied };
+  if (id && !idSchema.safeParse(id).success) return { ok: false, error: "Registro inválido." };
+  const parsed = taskTypeSchema.safeParse(values);
+  if (!parsed.success) {
+    const i = parsed.error.issues[0];
+    return { ok: false, error: i.message, field: i.path[0] as keyof TaskTypeFormValues };
+  }
+  const v = parsed.data;
+  const { data, error } = await rpc<string>("save_task_type", {
+    p_id: id,
+    p_name: v.name,
+    p_category: v.category,
+    p_description: v.description || null,
+    p_active: v.active === "true",
+  });
+  if (error || !data) {
+    const msg = error ? friendlyDbError(error) : UNEXPECTED_ERROR;
+    return { ok: false, error: msg, field: /nome/i.test(msg) ? "name" : undefined };
+  }
+  const type = await getTaskType(data);
+  refresh();
+  return type ? { ok: true, data: type } : { ok: false, error: UNEXPECTED_ERROR };
 }
 
 const statusSchema = z.enum(["EM_ANDAMENTO", "CONCLUIDA", "CANCELADA"]);

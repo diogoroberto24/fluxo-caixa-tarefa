@@ -63,6 +63,11 @@ export function formatDocument(digits: string): string {
   return digits;
 }
 
+/** "80010000" -> "80010-000". */
+export function formatZip(digits: string): string {
+  return digits.replace(/^(\d{5})(\d{3})$/, "$1-$2");
+}
+
 export function formatPhone(digits: string): string {
   const d = digits.replace(/\D/g, "");
   if (d.length === 11) return d.replace(/^(\d{2})(\d{5})(\d{4})$/, "($1) $2-$3");

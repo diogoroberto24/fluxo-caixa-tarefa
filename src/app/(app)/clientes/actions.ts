@@ -78,6 +78,46 @@ export async function saveClientAction(
   return { ok: true, data };
 }
 
+export interface CepAddress {
+  street: string;
+  district: string;
+  city: string;
+  state: string;
+}
+
+/**
+ * Consulta o endereço de um CEP no ViaCEP (serviço público). A chamada sai do servidor, só aceita 8 dígitos,
+ * tem tempo limite e o resultado é validado. `data: null` = CEP não encontrado.
+ */
+export async function lookupCepAction(cep: string): Promise<ActionResult<CepAddress | null>> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "Sessão expirada. Entre novamente." };
+  const digits = String(cep ?? "").replace(/\D/g, "");
+  if (digits.length !== 8) return { ok: false, error: "CEP inválido." };
+  try {
+    const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`, {
+      signal: AbortSignal.timeout(4000),
+      next: { revalidate: 86400 },
+    });
+    if (!res.ok) return { ok: false, error: "Serviço de CEP indisponível. Preencha o endereço manualmente." };
+    const j = (await res.json()) as Record<string, unknown>;
+    if (j.erro) return { ok: true, data: null };
+    const text = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
+    const state = text(j.uf, 2).toUpperCase();
+    return {
+      ok: true,
+      data: {
+        street: text(j.logradouro, 120),
+        district: text(j.bairro, 80),
+        city: text(j.localidade, 80),
+        state: /^[A-Z]{2}$/.test(state) ? state : "",
+      },
+    };
+  } catch {
+    return { ok: false, error: "Não foi possível consultar o CEP agora. Preencha o endereço manualmente." };
+  }
+}
+
 /** Inativa ou reativa. Nunca exclui: financeiro e tarefas permanecem. */
 export async function setClientActiveAction(
   id: string,

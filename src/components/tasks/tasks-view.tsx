@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardList, Plus, Search } from "lucide-react";
+import { ClipboardList, ListPlus, Plus, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { TaskForm } from "@/components/forms/task-form";
 import { useAppStore } from "@/components/providers/app-store";
@@ -17,6 +17,7 @@ import { isTaskOpen, sortTasks, TASK_CATEGORIES, taskUrgency } from "@/services/
 import type { TaskStatus } from "@/types/domain";
 import { StatCard } from "@/components/finance/shared";
 import { TaskDetailDialog } from "./task-detail-dialog";
+import { TaskTypesDialog } from "./task-types-dialog";
 
 const COLS = "md:grid-cols-[1.2fr_1.5fr_1fr_0.8fr_1.2fr_0.9fr_0.9fr]";
 
@@ -32,6 +33,7 @@ export function TasksView() {
   const [dueTo, setDueTo] = useState("");
   const [query, setQuery] = useState("");
   const [newOpen, setNewOpen] = useState(false);
+  const [catalogOpen, setCatalogOpen] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
 
   const clientName = useMemo(() => new Map(clients.map((c) => [c.id, c.tradeName])), [clients]);
@@ -78,9 +80,14 @@ export function TasksView() {
           <p className="text-sm text-slate-500">Obrigações e rotinas por cliente, com histórico de execuções.</p>
         </div>
         {canWrite && (
-          <Button onClick={() => setNewOpen(true)}>
-            <Plus className="h-4 w-4" /> Nova tarefa
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setCatalogOpen(true)}>
+              <ListPlus className="h-4 w-4" /> Cadastro de tarefas
+            </Button>
+            <Button onClick={() => setNewOpen(true)}>
+              <Plus className="h-4 w-4" /> Nova tarefa
+            </Button>
+          </div>
         )}
       </div>
 
@@ -177,10 +184,11 @@ export function TasksView() {
         )}
       </Card>
 
-      <Dialog open={newOpen} onOpenChange={setNewOpen} title="Nova tarefa" description="Tarefas recorrentes criam a próxima ocorrência ao serem concluídas.">
+      <Dialog open={newOpen} onOpenChange={setNewOpen} title="Nova tarefa" description="Escolha a tarefa do cadastro. Tarefas recorrentes criam a próxima ocorrência ao serem concluídas.">
         {newOpen && <TaskForm defaultClientId={clientId || null} onDone={() => setNewOpen(false)} />}
       </Dialog>
       <TaskDetailDialog taskId={openId} onClose={() => setOpenId(null)} />
+      <TaskTypesDialog open={catalogOpen} onClose={() => setCatalogOpen(false)} />
     </div>
   );
 }

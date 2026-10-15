@@ -1,14 +1,15 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import { ClipboardList, Loader2 } from "lucide-react";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { useAppStore } from "@/components/providers/app-store";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/fields";
 import { addDays } from "@/lib/dates";
+import { can } from "@/lib/permissions";
 import { taskSchema, type TaskFormValues } from "@/lib/schemas";
-import { TASK_CATEGORIES } from "@/services/tasks";
 import type { Task } from "@/types/domain";
 
 const RECURRENCE_LABEL = { NONE: "Não se repete", MENSAL: "Mensal", SEMESTRAL: "Semestral", ANUAL: "Anual" } as const;
@@ -18,26 +19,26 @@ export function TaskForm({
   defaultClientId,
   onDone,
 }: {
-  /** Quando informado, edita esta tarefa (a recorrência é definida na criação). */
+  /** Quando informado, edita esta tarefa (a tarefa do catálogo e a recorrência não mudam). */
   task?: Task;
   defaultClientId?: string | null;
   onDone: () => void;
 }) {
-  const { clients, users, createTask, updateTask, notify, today } = useAppStore();
+  const { clients, users, taskTypes, createTask, updateTask, notify, today, currentUser } = useAppStore();
   const editing = !!task;
+  const activeTypes = taskTypes.filter((t) => t.active);
   const {
     register,
     handleSubmit,
     setError,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
     defaultValues: task
       ? {
           clientId: task.clientId,
-          title: task.title,
-          category: task.category,
-          description: task.description ?? "",
+          taskTypeId: "keep",
           dueDate: task.dueDate,
           assigneeId: task.assigneeId ?? "",
           recurrence: task.recurrence,
@@ -45,12 +46,16 @@ export function TaskForm({
         }
       : {
           clientId: defaultClientId ?? "",
-          category: TASK_CATEGORIES[0],
+          taskTypeId: "",
           dueDate: addDays(today, 7),
           recurrence: "NONE",
           assigneeId: "",
+          notes: "",
         },
   });
+
+  const selected = taskTypes.find((t) => t.id === watch("taskTypeId"));
+  const noCatalog = !editing && activeTypes.length === 0;
 
   async function onSubmit(v: TaskFormValues) {
     const result = editing ? await updateTask(task.id, v) : await createTask(v);
@@ -59,16 +64,31 @@ export function TaskForm({
       notify(result.error, "error");
       return;
     }
-    notify(editing ? "Tarefa atualizada com sucesso." : "Tarefa criada com sucesso.");
+    notify(editing ? "Tarefa atualizada com sucesso." : "Tarefa lançada com sucesso.");
     onDone();
   }
 
-  const categories = task && !TASK_CATEGORIES.includes(task.category as never)
-    ? [task.category, ...TASK_CATEGORIES]
-    : TASK_CATEGORIES;
-
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="grid gap-4 sm:grid-cols-2">
+      {noCatalog && (
+        <div role="status" className="flex items-start gap-3 rounded-lg border border-warning-line bg-warning-soft p-4 text-sm sm:col-span-2">
+          <ClipboardList className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+          <div>
+            <p className="font-semibold text-navy">Nenhuma tarefa cadastrada ainda.</p>
+            <p className="mt-0.5 text-slate-700">
+              As tarefas são escolhidas do cadastro do escritório.{" "}
+              {can(currentUser.role, "task:write") ? (
+                <>
+                  Cadastre em <Link href="/tarefas" className="font-semibold text-primary underline">Tarefas → Cadastro de tarefas</Link>.
+                </>
+              ) : (
+                "Peça a um administrador ou contador para cadastrá-las."
+              )}
+            </p>
+          </div>
+        </div>
+      )}
+
       <Field label="Cliente *" error={errors.clientId?.message} className="sm:col-span-2">
         {editing ? (
           <Input readOnly value={clients.find((c) => c.id === task.clientId)?.tradeName ?? ""} />
@@ -81,14 +101,27 @@ export function TaskForm({
           </Select>
         )}
       </Field>
-      <Field label="Nome da tarefa *" error={errors.title?.message} className="sm:col-span-2">
-        <Input {...register("title")} />
+
+      <Field
+        label="Tarefa *"
+        error={errors.taskTypeId?.message}
+        hint={!editing && selected?.description ? selected.description : undefined}
+        className="sm:col-span-2"
+      >
+        {editing ? (
+          <Input readOnly value={`${task.title} · ${task.category}`} />
+        ) : (
+          <Select {...register("taskTypeId")} disabled={noCatalog}>
+            <option value="">Selecione…</option>
+            {activeTypes.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name} — {t.category}
+              </option>
+            ))}
+          </Select>
+        )}
       </Field>
-      <Field label="Categoria *" error={errors.category?.message}>
-        <Select {...register("category")}>
-          {categories.map((c) => <option key={c}>{c}</option>)}
-        </Select>
-      </Field>
+
       <Field label="Prazo *" error={errors.dueDate?.message}>
         <Input type="date" {...register("dueDate")} />
       </Field>
@@ -100,7 +133,8 @@ export function TaskForm({
       </Field>
       <Field
         label="Recorrência"
-        hint={editing ? "Definida na criação." : "Ao concluir, a próxima ocorrência é criada automaticamente."}
+        hint={editing ? "Definida no lançamento." : "Ao concluir, a próxima ocorrência é criada automaticamente."}
+        className="sm:col-span-2"
       >
         {editing ? (
           <Input readOnly value={RECURRENCE_LABEL[task.recurrence]} />
@@ -110,16 +144,13 @@ export function TaskForm({
           </Select>
         )}
       </Field>
-      <Field label="Descrição" className="sm:col-span-2">
-        <Textarea {...register("description")} />
-      </Field>
-      <Field label="Observações" className="sm:col-span-2">
-        <Textarea {...register("notes")} />
+      <Field label="Observação (opcional)" className="sm:col-span-2">
+        <Textarea placeholder="Ex.: cliente pediu prioridade, documentos já recebidos…" {...register("notes")} />
       </Field>
       <div className="flex justify-end sm:col-span-2">
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting || noCatalog}>
           {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-          {editing ? "Salvar alterações" : "Criar tarefa"}
+          {editing ? "Salvar alterações" : "Lançar tarefa"}
         </Button>
       </div>
     </form>

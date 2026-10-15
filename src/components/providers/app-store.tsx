@@ -31,6 +31,7 @@ import {
 } from "@/app/(app)/financeiro/actions";
 import {
   createTaskAction,
+  saveTaskTypeAction,
   setTaskStatusAction,
   updateTaskAction,
 } from "@/app/(app)/tarefas/actions";
@@ -42,6 +43,7 @@ import type {
   ReceivableFormValues,
   ServiceFormValues,
   TaskFormValues,
+  TaskTypeFormValues,
 } from "@/lib/schemas";
 import type {
   Client,
@@ -49,6 +51,7 @@ import type {
   Payable,
   Receivable,
   Task,
+  TaskType,
   User,
 } from "@/types/domain";
 
@@ -64,6 +67,7 @@ interface State {
   receivables: Receivable[];
   payables: Payable[];
   tasks: Task[];
+  taskTypes: TaskType[];
 }
 
 type Action =
@@ -74,6 +78,8 @@ type Action =
   | { type: "upsertReceivable"; receivable: Receivable }
   | { type: "upsertPayable"; payable: Payable }
   | { type: "setTasks"; tasks: Task[] }
+  | { type: "setTaskTypes"; taskTypes: TaskType[] }
+  | { type: "upsertTaskType"; taskType: TaskType }
   | { type: "upsertTask"; task: Task };
 
 function upsert<T extends { id: string }>(list: T[], item: T): T[] {
@@ -98,6 +104,10 @@ function reducer(state: State, action: Action): State {
       return { ...state, payables: upsert(state.payables, action.payable) };
     case "setTasks":
       return { ...state, tasks: action.tasks };
+    case "setTaskTypes":
+      return { ...state, taskTypes: action.taskTypes };
+    case "upsertTaskType":
+      return { ...state, taskTypes: upsert(state.taskTypes, action.taskType) };
     case "upsertTask":
       return { ...state, tasks: upsert(state.tasks, action.task) };
   }
@@ -136,7 +146,8 @@ interface AppStore extends State {
   payPayable: (id: string, opts?: PaymentOpts) => Result<{ payable: Payable; alreadyPaid: boolean }>;
   cancelPayable: (id: string, reason: string) => Result<Payable>;
   generateOccurrences: () => Result<{ created: number }>;
-  // tarefas
+  // tarefas e cadastro (catálogo) de tarefas
+  saveTaskType: (id: string | null, values: TaskTypeFormValues) => Result<TaskType, keyof TaskTypeFormValues>;
   createTask: (values: TaskFormValues) => Result<Task, keyof TaskFormValues>;
   updateTask: (id: string, values: TaskFormValues) => Result<Task, keyof TaskFormValues>;
   setTaskStatus: (
@@ -157,6 +168,7 @@ export function AppStoreProvider({
   initialReceivables,
   initialPayables,
   initialTasks,
+  initialTaskTypes,
   children,
 }: {
   today: string;
@@ -167,6 +179,7 @@ export function AppStoreProvider({
   initialReceivables: Receivable[];
   initialPayables: Payable[];
   initialTasks: Task[];
+  initialTaskTypes: TaskType[];
   children: ReactNode;
 }) {
   const [data, dispatch] = useReducer(
@@ -177,6 +190,7 @@ export function AppStoreProvider({
       receivables: initialReceivables,
       payables: initialPayables,
       tasks: initialTasks,
+      taskTypes: initialTaskTypes,
     }),
   );
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -186,6 +200,7 @@ export function AppStoreProvider({
   useEffect(() => dispatch({ type: "setReceivables", receivables: initialReceivables }), [initialReceivables]);
   useEffect(() => dispatch({ type: "setPayables", payables: initialPayables }), [initialPayables]);
   useEffect(() => dispatch({ type: "setTasks", tasks: initialTasks }), [initialTasks]);
+  useEffect(() => dispatch({ type: "setTaskTypes", taskTypes: initialTaskTypes }), [initialTaskTypes]);
 
   const notify = useCallback((message: string, tone: Toast["tone"] = "success") => {
     const id = Date.now() + Math.random();
@@ -255,6 +270,11 @@ export function AppStoreProvider({
       },
       generateOccurrences: () => generateOccurrencesAction(),
 
+      saveTaskType: async (id, values) => {
+        const r = await saveTaskTypeAction(id, values);
+        if (r.ok) dispatch({ type: "upsertTaskType", taskType: r.data });
+        return r;
+      },
       createTask: async (values) => {
         const r = await createTaskAction(values);
         if (r.ok) dispatch({ type: "upsertTask", task: r.data });

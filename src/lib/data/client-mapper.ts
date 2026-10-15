@@ -1,3 +1,4 @@
+import { maskDocument, maskPhone, maskZip } from "@/lib/masks";
 import { centsToInput, parseMoneyToCents } from "@/lib/money";
 import type { ClientFormValues } from "@/lib/schemas";
 import { onlyDigits } from "@/lib/validators";
@@ -158,17 +159,17 @@ export function clientToFormValues(c: Client): ClientFormValues {
     kind: c.kind,
     legalName: c.legalName,
     tradeName: c.tradeName,
-    document: c.document,
+    document: maskDocument(c.document),
     stateRegistration: c.stateRegistration ?? "",
     municipalRegistration: c.municipalRegistration ?? "",
-    zip: c.address.zip,
+    zip: maskZip(c.address.zip),
     street: c.address.street,
     number: c.address.number,
     complement: c.address.complement ?? "",
     district: c.address.district,
     city: c.address.city,
     state: c.address.state,
-    phone: c.phone,
+    phone: maskPhone(c.phone),
     email: c.email,
     taxRegime: c.taxRegime,
     contractStart: c.contractStart,

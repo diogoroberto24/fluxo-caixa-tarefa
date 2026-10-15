@@ -26,6 +26,8 @@ const supabase = adminClient();
 const manifest = JSON.parse(readFileSync(join(dir, "manifest.json"), "utf8"));
 
 const load = (table) => {
+  // backups antigos podem não ter tabelas criadas depois (ex.: task_types)
+  if (!existsSync(join(dir, `${table}.json`)) && !manifest.tables[table]) return [];
   const raw = readFileSync(join(dir, `${table}.json`), "utf8");
   const sha = createHash("sha256").update(raw).digest("hex");
   if (manifest.tables[table]?.sha256 !== sha) {
@@ -38,7 +40,7 @@ const load = (table) => {
 // 1) valida tudo antes de tocar no banco
 const data = Object.fromEntries(
   ["profiles", "financial_categories", "clients", "client_fee_history", "recurrence_rules", "receivables",
-   "payables", "payments", "task_definitions", "task_executions"].map((t) => [t, load(t)]),
+   "payables", "payments", "task_types", "task_definitions", "task_executions"].map((t) => [t, load(t)]),
 );
 
 // 2) o banco precisa estar sem clientes
@@ -88,6 +90,7 @@ await put("recurrence_rules", data.recurrence_rules.map((r) => ({ ...r, created_
 await put("receivables", data.receivables.map((r) => ({ ...r, created_by: keep(r.created_by), canceled_by: keep(r.canceled_by) })));
 await put("payables", data.payables.map((p) => ({ ...p, created_by: keep(p.created_by), canceled_by: keep(p.canceled_by) })));
 await put("payments", data.payments.map((p) => ({ ...p, created_by: keep(p.created_by) })));
+await put("task_types", data.task_types.map((t) => ({ ...t, created_by: keep(t.created_by) })));
 await put("task_definitions", data.task_definitions.map((t) => ({ ...t, created_by: keep(t.created_by), assignee_id: keep(t.assignee_id) })));
 await put("task_executions", data.task_executions.map((e) => ({ ...e, completed_by: keep(e.completed_by) })));
 

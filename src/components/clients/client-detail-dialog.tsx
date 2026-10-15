@@ -9,7 +9,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { EditServiceDialog, NewServiceDialog } from "@/components/finance/service-dialogs";
 import { can } from "@/lib/permissions";
 import type { FeeHistoryEntry } from "@/lib/data/clients";
-import { formatAddress, formatBRL, formatDate, formatDocument, formatPhone } from "@/lib/format";
+import { formatAddress, formatBRL, formatDate, formatDocument, formatPhone, formatZip } from "@/lib/format";
 import { MODULE_LABEL, TAX_REGIME_LABEL } from "@/services/clients";
 import { chargeStatus, feeHistory } from "@/services/finance";
 import type { Client } from "@/types/domain";
@@ -80,7 +80,7 @@ export function ClientDetailDialog({
               <dt className="text-xs text-slate-500">Módulos contratados</dt>
               <dd className="mt-0.5 flex flex-wrap gap-1.5">{client.modules.map((m) => <Badge key={m} tone="info">{MODULE_LABEL[m]}</Badge>)}</dd>
             </div>
-            <div className="flex items-start gap-2 sm:col-span-2"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />{addr.line1}, {addr.line2} · CEP {client.address.zip.replace(/^(\d{5})(\d{3})$/, "$1-$2")}</div>
+            <div className="flex items-start gap-2 sm:col-span-2"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />{addr.line1}, {addr.line2} · CEP {formatZip(client.address.zip)}</div>
             <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-slate-400" />{formatPhone(client.phone)}</div>
             <div className="flex items-center gap-2 break-all"><Mail className="h-4 w-4 shrink-0 text-slate-400" />{client.email}</div>
             {client.notes && <div className="sm:col-span-2"><dt className="text-xs text-slate-500">Observações internas</dt><dd>{client.notes}</dd></div>}
