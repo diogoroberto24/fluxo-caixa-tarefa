@@ -75,6 +75,20 @@ export function ClientForm({
     focus: (f) => setFocus(f),
   });
 
+  // ---- Endereço do representante legal (empresa): mesma busca de CEP, campos "rep*"
+  const REP: Record<"street" | "district" | "city" | "state" | "number", "repStreet" | "repDistrict" | "repCity" | "repState" | "repNumber"> = {
+    street: "repStreet", district: "repDistrict", city: "repCity", state: "repState", number: "repNumber",
+  };
+  const repCep = useCepLookup({
+    zip: watch("repZip") ?? "",
+    initialZip: editing ? client?.representative?.address.zip : undefined,
+    getValue: (f) => getValues(REP[f]),
+    setValue: (f, v) => setValue(REP[f], v, { shouldValidate: true, shouldDirty: true }),
+    focus: (f) => setFocus(REP[f]),
+  });
+  const docDigits = onlyDigits(watch("document") ?? "").length;
+  const isPerson = docDigits === 11;
+
   const kind = watch("kind");
   const eventual = kind === "EVENTUAL";
   const installments = Number(watch("installments") ?? "1");
@@ -184,6 +198,11 @@ export function ClientForm({
       <Field label="Inscrição municipal" className="sm:col-span-2">
         <Input {...register("municipalRegistration")} />
       </Field>
+      {isPerson && (
+        <Field label="RG" hint="Usado no contrato de pessoa física." className="sm:col-span-2">
+          <Input autoComplete="off" {...register("rg")} />
+        </Field>
+      )}
 
       <Field label="CEP *" error={errors.zip?.message} hint={cep.hint} className="sm:col-span-2">
         <Controller
@@ -220,6 +239,76 @@ export function ClientForm({
       <Field label="UF *" error={errors.state?.message}>
         <Input maxLength={2} {...register("state")} />
       </Field>
+
+      {!isPerson && (
+        <section className="grid gap-4 rounded-lg border border-line bg-surface/60 p-4 sm:col-span-6 sm:grid-cols-6">
+          <div className="sm:col-span-6">
+            <h3 className="text-sm font-semibold text-navy">Representante legal da empresa</h3>
+            <p className="text-xs text-slate-500">
+              Quem assina o contrato pela empresa. Pode ficar em branco agora; o contrato só é emitido com estes dados preenchidos.
+            </p>
+          </div>
+          <Field label="Nome completo" error={errors.repName?.message} className="sm:col-span-3">
+            <Input autoComplete="off" {...register("repName")} />
+          </Field>
+          <Field label="CPF" error={errors.repDocument?.message} className="sm:col-span-2">
+            <Controller
+              control={control}
+              name="repDocument"
+              render={({ field }) => (
+                <Input
+                  ref={field.ref}
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="000.000.000-00"
+                  value={field.value ?? ""}
+                  onBlur={field.onBlur}
+                  onChange={(e) => field.onChange(maskDocument(e.target.value))}
+                />
+              )}
+            />
+          </Field>
+          <Field label="RG" error={errors.repRg?.message}>
+            <Input autoComplete="off" {...register("repRg")} />
+          </Field>
+          <p className="-mb-2 text-xs font-medium text-slate-600 sm:col-span-6">Endereço de residência</p>
+          <Field label="CEP" error={errors.repZip?.message} hint={repCep.hint} className="sm:col-span-2">
+            <Controller
+              control={control}
+              name="repZip"
+              render={({ field }) => (
+                <Input
+                  ref={field.ref}
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="00000-000"
+                  value={field.value ?? ""}
+                  onBlur={field.onBlur}
+                  onChange={(e) => field.onChange(maskZip(e.target.value))}
+                />
+              )}
+            />
+          </Field>
+          <Field label="Logradouro" className="sm:col-span-3">
+            <Input autoComplete="off" {...register("repStreet")} />
+          </Field>
+          <Field label="Número">
+            <Input autoComplete="off" {...register("repNumber")} />
+          </Field>
+          <Field label="Complemento" className="sm:col-span-2">
+            <Input autoComplete="off" {...register("repComplement")} />
+          </Field>
+          <Field label="Bairro" className="sm:col-span-2">
+            <Input autoComplete="off" {...register("repDistrict")} />
+          </Field>
+          <Field label="Cidade">
+            <Input autoComplete="off" {...register("repCity")} />
+          </Field>
+          <Field label="UF" error={errors.repState?.message}>
+            <Input maxLength={2} autoComplete="off" {...register("repState")} />
+          </Field>
+        </section>
+      )}
 
       <Field label="Telefone *" error={errors.phone?.message} className="sm:col-span-2">
         <Controller

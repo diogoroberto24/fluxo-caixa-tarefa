@@ -38,6 +38,7 @@ Projeto próprio do escritório, região São Paulo, com Data API **ligada**,
 13. `supabase/migrations/20261019000001_catalogo_tarefas.sql` (cadastro/catálogo de tarefas)
 14. `supabase/migrations/20261020000001_tarefas_em_lote.sql` (lançar várias tarefas de uma vez)
 15. `supabase/migrations/20261021000001_escritorio_contratos.sql` (dados do escritório e contratos)
+16. `supabase/migrations/20261022000001_contrato_representante_pix.sql` (representante legal e RG do cliente, chave PIX do escritório, tipo de pessoa do modelo)
 
 Cada uma deve terminar com "Success. No rows returned". Rodar de novo gera erro "já existe" (esperado, sem dano).
 Confira em **Table Editor**: `profiles`, `clients`, `client_fee_history`, `audit_log`, `financial_categories`,
@@ -105,7 +106,9 @@ Depois, em **Authentication → URL Configuration**, ajuste o *Site URL* para o 
 - **Número ANO/NNN** gerado pelo banco (sem repetir). O texto emitido é uma **cópia** e nunca mais muda (mesmo que o modelo ou o cadastro mudem); só pode ser **cancelado**, nunca excluído.
 - **PDF:** abra o contrato e use **Imprimir / PDF** (no navegador: destino "Salvar como PDF").
 - Perfis: ADMIN e CONTADOR emitem e gerenciam modelos; só ADMIN altera os dados do escritório.
-- O modelo de contrato do escritório entra em **Modelos de contrato** (cole o texto e use a lista de campos).
+- Os modelos do escritório estão em `docs/modelos/*.modelo.txt` (empresa, pessoa física e serviço avulso) e entram no sistema com `npm run seed:contratos` (cadastra só os que ainda não existem; `-- --update` substitui o texto dos existentes). Cada modelo tem um **tipo de pessoa** (empresa, pessoa física ou qualquer) e só aparece para clientes compatíveis.
+- **Trechos condicionais:** `{{#se modulo.fiscal}} … {{/se}}` (também `modulo.contabil`, `modulo.folha`, `modulo.societario`) só sai no contrato se o serviço foi marcado na emissão; `{{n}}` numera os trechos que saírem (1, 2, 3…).
+- **Dados que o contrato de empresa exige do cliente:** representante legal (nome, RG, CPF e endereço de residência) no cadastro do cliente. Pessoa física: RG. Do escritório: CRC (só o número), categoria (ex.: CONTADOR), CPF do responsável, endereço, **chave PIX** e razão social (assina o contrato). Se faltar algo, a emissão é bloqueada e a tela lista o que falta.
 
 ## Digitação e endereço
 - CPF, CNPJ, telefone e CEP são formatados enquanto se digita; no banco ficam só os dígitos.

@@ -13,12 +13,18 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Field, Input, Select } from "@/components/ui/fields";
 import { CONTRACT_VARIABLES, EXAMPLE_TEMPLATE, renderTemplate } from "@/lib/contracts";
 import { contractTemplateSchema, type ContractTemplateFormValues } from "@/lib/schemas";
-import type { ContractAudience, ContractTemplate } from "@/types/domain";
+import type { ContractAudience, ContractParty, ContractTemplate } from "@/types/domain";
 
 export const AUDIENCE_LABEL: Record<ContractAudience, string> = {
   TODOS: "Todos os clientes",
   FIXO: "Clientes fixos",
   EVENTUAL: "Clientes eventuais",
+};
+
+export const PARTY_LABEL: Record<ContractParty, string> = {
+  QUALQUER: "Empresa ou pessoa física",
+  PJ: "Somente empresa (CNPJ)",
+  PF: "Somente pessoa física (CPF)",
 };
 
 function TemplateForm({ template, onDone }: { template?: ContractTemplate; onDone: () => void }) {
@@ -34,8 +40,8 @@ function TemplateForm({ template, onDone }: { template?: ContractTemplate; onDon
   } = useForm<ContractTemplateFormValues>({
     resolver: zodResolver(contractTemplateSchema),
     defaultValues: template
-      ? { name: template.name, audience: template.audience, body: template.body, active: template.active ? "true" : "false" }
-      : { name: "", audience: "TODOS", body: "", active: "true" },
+      ? { name: template.name, audience: template.audience, party: template.party, body: template.body, active: template.active ? "true" : "false" }
+      : { name: "", audience: "TODOS", party: "QUALQUER", body: "", active: "true" },
   });
   const bodyReg = register("body");
   const bodyRef = useRef<HTMLTextAreaElement | null>(null);
@@ -45,7 +51,9 @@ function TemplateForm({ template, onDone }: { template?: ContractTemplate; onDon
 
   function insert(key: string) {
     const el = bodyRef.current;
-    const token = `{{${key}}}`;
+    const isFlag = CONTRACT_VARIABLES.find((v) => v.key === key)?.flag;
+    // condição: insere o bloco inteiro; {{n}} vira a numeração corrida dos blocos que entrarem
+    const token = isFlag ? `{{#se ${key}}}\n\n{{n}}. \n{{/se}}\n` : `{{${key}}}`;
     const current = getValues("body") ?? "";
     const start = el?.selectionStart ?? current.length;
     const end = el?.selectionEnd ?? current.length;
@@ -67,7 +75,7 @@ function TemplateForm({ template, onDone }: { template?: ContractTemplate; onDon
     onDone();
   }
 
-  const groups = ["Escritório", "Cliente", "Contrato"] as const;
+  const groups = ["Escritório", "Cliente", "Contrato", "Condições"] as const;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="grid gap-4 lg:grid-cols-[1fr_260px]">
@@ -78,6 +86,11 @@ function TemplateForm({ template, onDone }: { template?: ContractTemplate; onDon
         <Field label="Aplica-se a *">
           <Select {...register("audience")}>
             {(Object.keys(AUDIENCE_LABEL) as ContractAudience[]).map((k) => <option key={k} value={k}>{AUDIENCE_LABEL[k]}</option>)}
+          </Select>
+        </Field>
+        <Field label="Tipo de pessoa *">
+          <Select {...register("party")}>
+            {(Object.keys(PARTY_LABEL) as ContractParty[]).map((k) => <option key={k} value={k}>{PARTY_LABEL[k]}</option>)}
           </Select>
         </Field>
         <Field label="Situação">
@@ -124,6 +137,9 @@ function TemplateForm({ template, onDone }: { template?: ContractTemplate; onDon
       <aside aria-label="Campos disponíveis" className="max-h-[560px] overflow-y-auto rounded-lg border border-line bg-surface/60 p-3 text-xs">
         <p className="mb-2 font-semibold text-navy">Campos automáticos</p>
         <p className="mb-3 text-slate-500">Clique para inserir no texto, na posição do cursor.</p>
+        <p className="mb-3 text-slate-500">
+          Em “Condições”, o trecho entre <code>{"{{#se …}}"}</code> e <code>{"{{/se}}"}</code> só sai no contrato se o cliente contratou aquele serviço; <code>{"{{n}}"}</code> numera os trechos que saírem.
+        </p>
         {groups.map((g) => (
           <div key={g} className="mb-3">
             <p className="mb-1 font-semibold text-slate-600">{g}</p>
@@ -189,7 +205,7 @@ export function TemplatesDialog({
                       <span className="truncate font-semibold text-navy">{t.name}</span>
                       {!t.active && <Badge>Inativo</Badge>}
                     </div>
-                    <div className="text-xs text-slate-500">{AUDIENCE_LABEL[t.audience]}</div>
+                    <div className="text-xs text-slate-500">{AUDIENCE_LABEL[t.audience]} · {PARTY_LABEL[t.party]}</div>
                   </div>
                   <Button size="icon" variant="outline" aria-label={`Editar ${t.name}`} title="Editar" onClick={() => setForm({ template: t })}>
                     <Pencil className="h-4 w-4" />

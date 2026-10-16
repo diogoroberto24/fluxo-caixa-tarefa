@@ -35,12 +35,24 @@ export interface Address {
   state: string;
 }
 
+/** Representante legal da empresa (assina o contrato). Tudo opcional no cadastro; o contrato exige o que usar. */
+export interface Representative {
+  name: string;
+  rg: string;
+  /** Somente dígitos (CPF). */
+  document: string;
+  address: Address;
+}
+
 export interface Client {
   id: string;
   legalName: string;
   tradeName: string;
   /** Somente dígitos (CPF ou CNPJ). */
   document: string;
+  /** RG (cliente pessoa física). */
+  rg?: string;
+  representative?: Representative;
   stateRegistration?: string;
   municipalRegistration?: string;
   address: Address;
@@ -124,12 +136,15 @@ export interface TaskType {
 
 export type ContractAudience = "FIXO" | "EVENTUAL" | "TODOS";
 export type ContractStatus = "EMITIDO" | "CANCELADO";
+/** Tipo de pessoa a que o modelo se aplica: empresa (CNPJ), pessoa física (CPF) ou qualquer. */
+export type ContractParty = "QUALQUER" | "PJ" | "PF";
 
 /** Modelo de contrato com campos {{grupo.campo}}. */
 export interface ContractTemplate {
   id: string;
   name: string;
   audience: ContractAudience;
+  party: ContractParty;
   body: string;
   active: boolean;
 }

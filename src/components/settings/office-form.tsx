@@ -19,7 +19,7 @@ function toForm(o: OfficeData): OfficeFormValues {
     representativeName: o.representativeName, representativeDocument: maskDocument(o.representativeDocument),
     representativeRole: o.representativeRole, representativeCrc: o.representativeCrc, zip: maskZip(o.zip),
     street: o.street, number: o.number, complement: o.complement, district: o.district, city: o.city,
-    state: o.state, phone: maskPhone(o.phone), email: o.email, defaultForum: o.defaultForum,
+    state: o.state, phone: maskPhone(o.phone), email: o.email, defaultForum: o.defaultForum, pixKey: o.pixKey,
   };
 }
 
@@ -88,7 +88,7 @@ export function OfficeForm({ initial }: { initial: OfficeData }) {
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="grid gap-4 p-5 sm:grid-cols-6">
         <h3 className="text-sm font-semibold text-navy sm:col-span-6">Identificação</h3>
-        <Field label="Razão social" error={errors.legalName?.message} className="sm:col-span-4">
+        <Field label="Razão social" hint="Sai assim na assinatura do contrato." error={errors.legalName?.message} className="sm:col-span-4">
           <Input {...register("legalName")} />
         </Field>
         <Field label="Nome fantasia" error={errors.tradeName?.message} className="sm:col-span-2">
@@ -98,7 +98,7 @@ export function OfficeForm({ initial }: { initial: OfficeData }) {
           {masked("document", maskDocument, { inputMode: "numeric", placeholder: "00.000.000/0000-00" })}
         </Field>
         <Field label="CRC do escritório" error={errors.crc?.message} className="sm:col-span-3">
-          <Input placeholder="Ex.: CRC/PR 000000/O" {...register("crc")} />
+          <Input placeholder="Ex.: 000000/O-0" {...register("crc")} />
         </Field>
 
         <h3 className="mt-2 text-sm font-semibold text-navy sm:col-span-6">Responsável pela assinatura</h3>
@@ -108,11 +108,16 @@ export function OfficeForm({ initial }: { initial: OfficeData }) {
         <Field label="CPF" error={errors.representativeDocument?.message} className="sm:col-span-3">
           {masked("representativeDocument", maskDocument, { inputMode: "numeric", placeholder: "000.000.000-00" })}
         </Field>
-        <Field label="Cargo / qualificação" error={errors.representativeRole?.message} className="sm:col-span-3">
-          <Input placeholder="Ex.: Sócio-administrador, contador" {...register("representativeRole")} />
+        <Field label="Categoria profissional" hint="Como sai no contrato (ex.: CONTADOR)." error={errors.representativeRole?.message} className="sm:col-span-3">
+          <Input placeholder="Ex.: CONTADOR" {...register("representativeRole")} />
         </Field>
-        <Field label="CRC do responsável" error={errors.representativeCrc?.message} className="sm:col-span-3">
-          <Input {...register("representativeCrc")} />
+        <Field
+          label="Número do CRC do responsável"
+          hint="Só o número, sem “CRC/UF” (o contrato escreve CRC/UF antes). Ex.: 079908/O-0"
+          error={errors.representativeCrc?.message}
+          className="sm:col-span-3"
+        >
+          <Input placeholder="079908/O-0" {...register("representativeCrc")} />
         </Field>
 
         <h3 className="mt-2 text-sm font-semibold text-navy sm:col-span-6">Endereço e contato</h3>
@@ -145,6 +150,9 @@ export function OfficeForm({ initial }: { initial: OfficeData }) {
         </Field>
 
         <h3 className="mt-2 text-sm font-semibold text-navy sm:col-span-6">Contratos</h3>
+        <Field label="Chave PIX para recebimento" hint="Sai no contrato, na cláusula dos honorários (CNPJ, CPF, e-mail, telefone ou chave aleatória)." error={errors.pixKey?.message} className="sm:col-span-6">
+          <Input autoComplete="off" placeholder="Ex.: 00.000.000/0001-00" {...register("pixKey")} />
+        </Field>
         <Field label="Foro padrão (comarca)" hint="Sugerido ao emitir cada contrato; dá para alterar em cada um." error={errors.defaultForum?.message} className="sm:col-span-6">
           <Input placeholder="Ex.: Curitiba/PR" {...register("defaultForum")} />
         </Field>

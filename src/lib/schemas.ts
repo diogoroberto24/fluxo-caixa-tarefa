@@ -27,6 +27,18 @@ const clientBase = z.object({
     .refine((v) => isValidDocument(v), "CPF ou CNPJ inválido."),
   stateRegistration: optional,
   municipalRegistration: optional,
+  // RG (pessoa física) e representante legal (empresa): opcionais no cadastro; o contrato exige o que o modelo usar
+  rg: optional,
+  repName: optional,
+  repRg: optional,
+  repDocument: z.string().trim().optional().refine((v) => !v || (isValidDocument(v) && onlyDigits(v).length === 11), "CPF do representante inválido."),
+  repZip: z.string().trim().optional().refine((v) => !v || onlyDigits(v).length === 8, "CEP deve ter 8 dígitos."),
+  repStreet: optional,
+  repNumber: optional,
+  repComplement: optional,
+  repDistrict: optional,
+  repCity: optional,
+  repState: z.string().trim().optional().refine((v) => !v || /^[A-Za-z]{2}$/.test(v), "Use a sigla da UF (ex.: PR)."),
   zip: z
     .string()
     .trim()
@@ -209,6 +221,7 @@ export const officeSchema = z.object({
   phone: z.string().trim().refine((v) => !v || [10, 11].includes(onlyDigits(v).length), "Telefone inválido."),
   email: z.string().trim().refine((v) => !v || z.string().email().safeParse(v).success, "E-mail inválido."),
   defaultForum: optional,
+  pixKey: optional,
 });
 export type OfficeFormValues = z.infer<typeof officeSchema>;
 
@@ -216,6 +229,7 @@ export type OfficeFormValues = z.infer<typeof officeSchema>;
 export const contractTemplateSchema = z.object({
   name: required("Informe o nome do modelo."),
   audience: z.enum(["FIXO", "EVENTUAL", "TODOS"]),
+  party: z.enum(["QUALQUER", "PJ", "PF"]),
   body: z.string().refine((v) => v.trim().length > 0, "O texto do modelo não pode ficar vazio.").refine((v) => v.length <= 200000, "Texto longo demais."),
   active: z.enum(["true", "false"]),
 });

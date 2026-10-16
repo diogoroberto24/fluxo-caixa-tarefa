@@ -1,6 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import type { Contract, ContractAudience, ContractStatus, ContractTemplate } from "@/types/domain";
+import type { Contract, ContractAudience, ContractParty, ContractStatus, ContractTemplate } from "@/types/domain";
 
 export interface DbError {
   code?: string;
@@ -11,6 +11,7 @@ interface TemplateRow {
   id: string;
   name: string;
   audience: string;
+  party: string;
   body: string;
   active: boolean;
 }
@@ -30,6 +31,7 @@ const toTemplate = (r: TemplateRow): ContractTemplate => ({
   id: r.id,
   name: r.name,
   audience: r.audience as ContractAudience,
+  party: r.party as ContractParty,
   body: r.body,
   active: r.active,
 });
@@ -49,14 +51,14 @@ const LIST_COLS = "id, number, client_id, template_name, issued_on, status, canc
 
 export async function listTemplates(): Promise<ContractTemplate[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase.from("contract_templates").select("id, name, audience, body, active").order("name");
+  const { data, error } = await supabase.from("contract_templates").select("id, name, audience, party, body, active").order("name");
   if (error) throw new Error(`Falha ao carregar os modelos: ${error.message}`);
   return (data as TemplateRow[]).map(toTemplate);
 }
 
 export async function getTemplate(id: string): Promise<ContractTemplate | null> {
   const supabase = await createClient();
-  const { data } = await supabase.from("contract_templates").select("id, name, audience, body, active").eq("id", id).maybeSingle();
+  const { data } = await supabase.from("contract_templates").select("id, name, audience, party, body, active").eq("id", id).maybeSingle();
   return data ? toTemplate(data as TemplateRow) : null;
 }
 

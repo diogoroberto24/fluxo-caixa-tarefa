@@ -2,7 +2,7 @@ import { maskDocument, maskPhone, maskZip } from "@/lib/masks";
 import { centsToInput, parseMoneyToCents } from "@/lib/money";
 import type { ClientFormValues } from "@/lib/schemas";
 import { onlyDigits } from "@/lib/validators";
-import type { Client, ClientKind, ServiceModule, TaxRegime } from "@/types/domain";
+import type { Client, ClientKind, Representative, ServiceModule, TaxRegime } from "@/types/domain";
 
 export type ClientInput = Omit<Client, "id" | "isDemo">;
 
@@ -32,10 +32,21 @@ export interface ClientRow {
   notes: string | null;
   is_demo: boolean;
   kind: string;
+  rg: string | null;
+  representative_name: string | null;
+  representative_rg: string | null;
+  representative_document: string | null;
+  representative_zip: string | null;
+  representative_street: string | null;
+  representative_number: string | null;
+  representative_complement: string | null;
+  representative_district: string | null;
+  representative_city: string | null;
+  representative_state: string | null;
 }
 
 export const CLIENT_COLUMNS =
-  "id, legal_name, trade_name, document, state_registration, municipal_registration, zip, street, number, complement, district, city, state, phone, email, tax_regime, contract_start, modules, monthly_fee, fee_due_day, active, notes, is_demo, kind";
+  "id, legal_name, trade_name, document, state_registration, municipal_registration, zip, street, number, complement, district, city, state, phone, email, tax_regime, contract_start, modules, monthly_fee, fee_due_day, active, notes, is_demo, kind, rg, representative_name, representative_rg, representative_document, representative_zip, representative_street, representative_number, representative_complement, representative_district, representative_city, representative_state";
 
 /** numeric(12,2) -> centavos inteiros, sem acumular erro de ponto flutuante. */
 export function feeToCents(value: number | string): number {
@@ -46,12 +57,33 @@ export function centsToFee(cents: number): string {
   return (cents / 100).toFixed(2);
 }
 
+function rowToRepresentative(r: ClientRow): Representative | undefined {
+  const any = [r.representative_name, r.representative_rg, r.representative_document, r.representative_street, r.representative_city];
+  if (!any.some(Boolean)) return undefined;
+  return {
+    name: r.representative_name ?? "",
+    rg: r.representative_rg ?? "",
+    document: r.representative_document ?? "",
+    address: {
+      zip: r.representative_zip ?? "",
+      street: r.representative_street ?? "",
+      number: r.representative_number ?? "",
+      complement: r.representative_complement ?? undefined,
+      district: r.representative_district ?? "",
+      city: r.representative_city ?? "",
+      state: r.representative_state ?? "",
+    },
+  };
+}
+
 export function rowToClient(r: ClientRow): Client {
   return {
     id: r.id,
     legalName: r.legal_name,
     tradeName: r.trade_name,
     document: r.document,
+    rg: r.rg ?? undefined,
+    representative: rowToRepresentative(r),
     stateRegistration: r.state_registration ?? undefined,
     municipalRegistration: r.municipal_registration ?? undefined,
     address: {
@@ -101,6 +133,17 @@ export function inputToRow(c: ClientInput) {
     fee_due_day: c.feeDueDay,
     active: c.active,
     notes: c.notes ?? null,
+    rg: c.rg ?? null,
+    representative_name: c.representative?.name || null,
+    representative_rg: c.representative?.rg || null,
+    representative_document: c.representative?.document || null,
+    representative_zip: c.representative?.address.zip || null,
+    representative_street: c.representative?.address.street || null,
+    representative_number: c.representative?.address.number || null,
+    representative_complement: c.representative?.address.complement || null,
+    representative_district: c.representative?.address.district || null,
+    representative_city: c.representative?.address.city || null,
+    representative_state: c.representative?.address.state || null,
   };
 }
 
@@ -122,6 +165,25 @@ export function formValuesToPlan(v: ClientFormValues): ServicePlan {
 }
 
 /** Valores validados do formulário -> entrada do domínio. */
+function formToRepresentative(v: ClientFormValues): Representative | undefined {
+  const rep: Representative = {
+    name: (v.repName ?? "").trim(),
+    rg: (v.repRg ?? "").trim(),
+    document: onlyDigits(v.repDocument ?? ""),
+    address: {
+      zip: onlyDigits(v.repZip ?? ""),
+      street: (v.repStreet ?? "").trim(),
+      number: (v.repNumber ?? "").trim(),
+      complement: (v.repComplement ?? "").trim() || undefined,
+      district: (v.repDistrict ?? "").trim(),
+      city: (v.repCity ?? "").trim(),
+      state: (v.repState ?? "").trim().toUpperCase(),
+    },
+  };
+  const filled = [rep.name, rep.rg, rep.document, rep.address.street, rep.address.city, rep.address.zip].some(Boolean);
+  return filled ? rep : undefined;
+}
+
 export function formValuesToInput(v: ClientFormValues): ClientInput {
   const eventual = v.kind === "EVENTUAL";
   return {
@@ -129,6 +191,8 @@ export function formValuesToInput(v: ClientFormValues): ClientInput {
     legalName: v.legalName,
     tradeName: v.tradeName,
     document: onlyDigits(v.document),
+    rg: (v.rg ?? "").trim() || undefined,
+    representative: formToRepresentative(v),
     stateRegistration: v.stateRegistration || undefined,
     municipalRegistration: v.municipalRegistration || undefined,
     address: {
@@ -160,6 +224,17 @@ export function clientToFormValues(c: Client): ClientFormValues {
     legalName: c.legalName,
     tradeName: c.tradeName,
     document: maskDocument(c.document),
+    rg: c.rg ?? "",
+    repName: c.representative?.name ?? "",
+    repRg: c.representative?.rg ?? "",
+    repDocument: c.representative?.document ? maskDocument(c.representative.document) : "",
+    repZip: c.representative?.address.zip ? maskZip(c.representative.address.zip) : "",
+    repStreet: c.representative?.address.street ?? "",
+    repNumber: c.representative?.address.number ?? "",
+    repComplement: c.representative?.address.complement ?? "",
+    repDistrict: c.representative?.address.district ?? "",
+    repCity: c.representative?.address.city ?? "",
+    repState: c.representative?.address.state ?? "",
     stateRegistration: c.stateRegistration ?? "",
     municipalRegistration: c.municipalRegistration ?? "",
     zip: maskZip(c.address.zip),

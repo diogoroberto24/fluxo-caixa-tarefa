@@ -13,6 +13,7 @@ import {
   buildContractVariables,
   defaultContractForm,
   parseContractForm,
+  partyMatches,
   renderTemplate,
   variableLabel,
   type ContractFormValues,
@@ -44,7 +45,7 @@ export function EmitContractDialog({
 
   const client = clients.find((c) => c.id === clientId);
   const eligible = useMemo(
-    () => templates.filter((t) => t.active && client && (t.audience === "TODOS" || t.audience === client.kind)),
+    () => templates.filter((t) => t.active && client && (t.audience === "TODOS" || t.audience === client.kind) && partyMatches(t.party, client.document)),
     [templates, client],
   );
   const template = eligible.find((t) => t.id === templateId);

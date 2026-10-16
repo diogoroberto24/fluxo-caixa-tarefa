@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import {
   buildContractVariables,
   parseContractForm,
+  partyMatches,
   renderTemplate,
   variableLabel,
   type ContractFormValues,
@@ -48,6 +49,7 @@ export async function saveTemplateAction(
     p_audience: v.audience,
     p_body: v.body,
     p_active: v.active === "true",
+    p_party: v.party,
   });
   if (error || !data) {
     const msg = error ? friendlyDbError(error) : UNEXPECTED_ERROR;
@@ -76,6 +78,9 @@ export async function issueContractAction(input: {
   if (!template || !template.active) return { ok: false, error: "Modelo não encontrado ou inativo." };
   if (template.audience !== "TODOS" && template.audience !== client.kind) {
     return { ok: false, error: "Este modelo não se aplica ao tipo deste cliente." };
+  }
+  if (!partyMatches(template.party, client.document)) {
+    return { ok: false, error: "Este modelo não se aplica ao tipo de pessoa (empresa ou pessoa física) deste cliente." };
   }
 
   const cond = parseContractForm(client.kind, input.form);

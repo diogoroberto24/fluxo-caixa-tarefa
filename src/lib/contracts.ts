@@ -8,7 +8,7 @@ import { formatBRL, formatDate, formatDocument, formatPhone, formatZip } from "@
 import { planInstallments } from "@/lib/installments";
 import { centsToInput, parseMoneyToCents } from "@/lib/money";
 import { MODULE_LABEL, TAX_REGIME_LABEL } from "@/services/clients";
-import type { Client, ServiceModule } from "@/types/domain";
+import type { Address, Client, ServiceModule } from "@/types/domain";
 
 // ----------------------------------------------------------------- por extenso
 const UNITS = ["zero", "um", "dois", "três", "quatro", "cinco", "seis", "sete", "oito", "nove", "dez", "onze", "doze", "treze", "catorze", "quinze", "dezesseis", "dezessete", "dezoito", "dezenove"];
@@ -88,13 +88,22 @@ function joinList(items: string[]): string {
   return `${items.slice(0, -1).join(", ")} e ${items[items.length - 1]}`;
 }
 
+/** O modelo vale para o tipo de pessoa do cliente? CPF (11 dígitos) = pessoa física; CNPJ = empresa. */
+export function partyMatches(party: "QUALQUER" | "PJ" | "PF", document: string): boolean {
+  if (party === "QUALQUER") return true;
+  const person = document.replace(/\D/g, "").length === 11;
+  return party === "PF" ? person : !person;
+}
+
 // ------------------------------------------------------------------- variáveis
 export interface VariableDef {
   key: string;
   label: string;
-  group: "Escritório" | "Cliente" | "Contrato";
+  group: "Escritório" | "Cliente" | "Contrato" | "Condições";
   /** Opcional: se estiver vazio, sai em branco em vez de bloquear a emissão. */
   optional?: boolean;
+  /** Condição de bloco ({{#se campo}}...{{/se}}): vale "sim" ou "não", nunca bloqueia a emissão. */
+  flag?: boolean;
 }
 
 export const CONTRACT_VARIABLES: VariableDef[] = [
@@ -103,18 +112,28 @@ export const CONTRACT_VARIABLES: VariableDef[] = [
   { key: "escritorio.cnpj", label: "CNPJ/CPF do escritório", group: "Escritório" },
   { key: "escritorio.crc", label: "CRC do escritório", group: "Escritório" },
   { key: "escritorio.endereco", label: "Endereço completo do escritório", group: "Escritório" },
+  { key: "escritorio.logradouro", label: "Logradouro do escritório (rua, avenida…)", group: "Escritório" },
+  { key: "escritorio.numero", label: "Número do endereço do escritório", group: "Escritório" },
   { key: "escritorio.cidade", label: "Cidade do escritório", group: "Escritório" },
-  { key: "escritorio.uf", label: "UF do escritório", group: "Escritório" },
+  { key: "escritorio.uf", label: "UF do escritório (PR)", group: "Escritório" },
+  { key: "escritorio.estado_extenso", label: "Estado do escritório por extenso (Paraná)", group: "Escritório" },
+  { key: "escritorio.estado_artigo", label: "Estado com preposição (do Paraná, de Santa Catarina, da Bahia)", group: "Escritório" },
+  { key: "escritorio.chave_pix", label: "Chave PIX do escritório", group: "Escritório" },
   { key: "escritorio.telefone", label: "Telefone do escritório", group: "Escritório", optional: true },
   { key: "escritorio.email", label: "E-mail do escritório", group: "Escritório", optional: true },
   { key: "escritorio.responsavel_nome", label: "Responsável (nome)", group: "Escritório" },
-  { key: "escritorio.responsavel_cpf", label: "Responsável (CPF)", group: "Escritório", optional: true },
-  { key: "escritorio.responsavel_cargo", label: "Responsável (cargo)", group: "Escritório", optional: true },
-  { key: "escritorio.responsavel_crc", label: "Responsável (CRC)", group: "Escritório", optional: true },
+  { key: "escritorio.responsavel_cpf", label: "Responsável (CPF)", group: "Escritório" },
+  { key: "escritorio.responsavel_cargo", label: "Responsável (cargo)", group: "Escritório" },
+  { key: "escritorio.responsavel_crc", label: "Responsável (número do CRC)", group: "Escritório" },
   { key: "cliente.razao_social", label: "Razão social / nome do cliente", group: "Cliente" },
   { key: "cliente.nome_fantasia", label: "Nome fantasia do cliente", group: "Cliente", optional: true },
   { key: "cliente.tipo_documento", label: "Tipo do documento (CPF ou CNPJ)", group: "Cliente" },
   { key: "cliente.documento", label: "CPF/CNPJ do cliente", group: "Cliente" },
+  { key: "cliente.rg", label: "RG do cliente (pessoa física)", group: "Cliente" },
+  { key: "cliente.representante_nome", label: "Representante legal (nome)", group: "Cliente" },
+  { key: "cliente.representante_rg", label: "Representante legal (RG)", group: "Cliente" },
+  { key: "cliente.representante_cpf", label: "Representante legal (CPF)", group: "Cliente" },
+  { key: "cliente.representante_endereco", label: "Representante legal (endereço de residência)", group: "Cliente" },
   { key: "cliente.inscricao_estadual", label: "Inscrição estadual", group: "Cliente", optional: true },
   { key: "cliente.inscricao_municipal", label: "Inscrição municipal", group: "Cliente", optional: true },
   { key: "cliente.endereco", label: "Endereço completo do cliente", group: "Cliente" },
@@ -141,7 +160,35 @@ export const CONTRACT_VARIABLES: VariableDef[] = [
   { key: "contrato.forma_pagamento", label: "Forma de pagamento (texto)", group: "Contrato" },
   { key: "contrato.foro", label: "Foro (comarca)", group: "Contrato" },
   { key: "contrato.observacoes", label: "Observações / cláusulas adicionais", group: "Contrato", optional: true },
+  { key: "modulo.contabil", label: "Cliente contratou Contabilidade", group: "Condições", flag: true },
+  { key: "modulo.fiscal", label: "Cliente contratou Obrigações Fiscais", group: "Condições", flag: true },
+  { key: "modulo.folha", label: "Cliente contratou Folha de Pagamento", group: "Condições", flag: true },
+  { key: "modulo.societario", label: "Cliente contratou Serviços Societários", group: "Condições", flag: true },
 ];
+
+/** Estados: nome por extenso e a preposição usada em "Estado do Paraná / de Santa Catarina / da Bahia". */
+const STATES: Record<string, { name: string; of: "do" | "da" | "de" }> = {
+  AC: { name: "Acre", of: "do" }, AL: { name: "Alagoas", of: "de" }, AP: { name: "Amapá", of: "do" },
+  AM: { name: "Amazonas", of: "do" }, BA: { name: "Bahia", of: "da" }, CE: { name: "Ceará", of: "do" },
+  DF: { name: "Distrito Federal", of: "do" }, ES: { name: "Espírito Santo", of: "do" }, GO: { name: "Goiás", of: "de" },
+  MA: { name: "Maranhão", of: "do" }, MT: { name: "Mato Grosso", of: "de" }, MS: { name: "Mato Grosso do Sul", of: "de" },
+  MG: { name: "Minas Gerais", of: "de" }, PA: { name: "Pará", of: "do" }, PB: { name: "Paraíba", of: "da" },
+  PR: { name: "Paraná", of: "do" }, PE: { name: "Pernambuco", of: "de" }, PI: { name: "Piauí", of: "do" },
+  RJ: { name: "Rio de Janeiro", of: "do" }, RN: { name: "Rio Grande do Norte", of: "do" },
+  RS: { name: "Rio Grande do Sul", of: "do" }, RO: { name: "Rondônia", of: "de" }, RR: { name: "Roraima", of: "de" },
+  SC: { name: "Santa Catarina", of: "de" }, SP: { name: "São Paulo", of: "de" }, SE: { name: "Sergipe", of: "de" },
+  TO: { name: "Tocantins", of: "do" },
+};
+
+export function stateName(uf: string): string {
+  return STATES[uf.trim().toUpperCase()]?.name ?? "";
+}
+
+/** "PR" -> "do Paraná"; "SC" -> "de Santa Catarina"; "BA" -> "da Bahia". */
+export function stateWithArticle(uf: string): string {
+  const s = STATES[uf.trim().toUpperCase()];
+  return s ? `${s.of} ${s.name}` : "";
+}
 
 export interface OfficeData {
   legalName: string;
@@ -162,12 +209,13 @@ export interface OfficeData {
   phone: string;
   email: string;
   defaultForum: string;
+  pixKey: string;
 }
 
 export const EMPTY_OFFICE: OfficeData = {
   legalName: "", tradeName: "", document: "", crc: "", representativeName: "", representativeDocument: "",
   representativeRole: "", representativeCrc: "", zip: "", street: "", number: "", complement: "", district: "",
-  city: "", state: "", phone: "", email: "", defaultForum: "",
+  city: "", state: "", phone: "", email: "", defaultForum: "", pixKey: "",
 };
 
 /** Condições informadas na emissão (cada contrato usa as do tipo do cliente). */
@@ -194,6 +242,15 @@ function addressLine(a: { street: string; number: string; complement?: string; d
   return `${parts.filter(Boolean).join(", ")}${a.zip ? `, CEP ${formatZip(a.zip)}` : ""}`;
 }
 
+/** "Rua X, nº 45 - ap 2, Bairro Y, Município de Curitiba, CEP 80000-000" (vazio se faltar parte essencial). */
+function residenceLine(a: Address | undefined): string {
+  if (!a || !a.street || !a.number || !a.district || !a.city) return "";
+  const num = `nº ${a.number}${a.complement ? ` - ${a.complement}` : ""}`;
+  return [a.street, num, `Bairro ${a.district}`, `Município de ${a.city}`, a.zip ? `CEP ${formatZip(a.zip)}` : ""]
+    .filter(Boolean)
+    .join(", ");
+}
+
 function paymentText(cond: ContractConditions): string {
   const plan = planInstallments(cond.totalCents, cond.installments, cond.firstDueDate);
   if (plan.length === 0) return "";
@@ -204,7 +261,7 @@ function paymentText(cond: ContractConditions): string {
     first === rest
       ? `de ${formatBRL(first)} (${moneyToWords(first)}) cada`
       : `sendo a primeira de ${formatBRL(first)} (${moneyToWords(first)}) e as demais de ${formatBRL(rest)} (${moneyToWords(rest)}) cada`;
-  return `em ${plan.length} (${numberToWords(plan.length)}) parcelas mensais e consecutivas, ${amounts}, vencendo a primeira em ${formatDate(plan[0].dueDate)} e as demais no mesmo dia dos meses seguintes`;
+  return `em ${plan.length} (${plan.length === 2 ? "duas" : numberToWords(plan.length)}) parcelas mensais e consecutivas, ${amounts}, vencendo a primeira em ${formatDate(plan[0].dueDate)} e as demais no mesmo dia dos meses seguintes`;
 }
 
 /** Valores de todas as variáveis ("" = não informado). */
@@ -223,8 +280,13 @@ export function buildContractVariables(args: {
     "escritorio.cnpj": o.document ? formatDocument(o.document) : "",
     "escritorio.crc": o.crc,
     "escritorio.endereco": addressLine(o),
+    "escritorio.logradouro": o.street,
+    "escritorio.numero": o.number,
     "escritorio.cidade": o.city,
-    "escritorio.uf": o.state,
+    "escritorio.uf": o.state.toUpperCase(),
+    "escritorio.estado_extenso": stateName(o.state),
+    "escritorio.estado_artigo": stateWithArticle(o.state),
+    "escritorio.chave_pix": o.pixKey,
     "escritorio.telefone": o.phone ? formatPhone(o.phone) : "",
     "escritorio.email": o.email,
     "escritorio.responsavel_nome": o.representativeName,
@@ -235,6 +297,11 @@ export function buildContractVariables(args: {
     "cliente.nome_fantasia": c.tradeName === c.legalName ? "" : c.tradeName,
     "cliente.tipo_documento": c.document.length === 11 ? "CPF" : "CNPJ",
     "cliente.documento": formatDocument(c.document),
+    "cliente.rg": c.rg ?? "",
+    "cliente.representante_nome": c.representative?.name ?? "",
+    "cliente.representante_rg": c.representative?.rg ?? "",
+    "cliente.representante_cpf": c.representative?.document ? formatDocument(c.representative.document) : "",
+    "cliente.representante_endereco": residenceLine(c.representative?.address),
     "cliente.inscricao_estadual": c.stateRegistration ?? "",
     "cliente.inscricao_municipal": c.municipalRegistration ?? "",
     "cliente.endereco": addressLine(c.address),
@@ -266,12 +333,20 @@ export function buildContractVariables(args: {
         : "",
     "contrato.foro": cond.forum.trim(),
     "contrato.observacoes": cond.notes.trim(),
+    "modulo.contabil": cond.services.includes("CONTABIL") ? "1" : "",
+    "modulo.fiscal": cond.services.includes("FISCAL") ? "1" : "",
+    "modulo.folha": cond.services.includes("FOLHA") ? "1" : "",
+    "modulo.societario": cond.services.includes("SOCIETARIO") ? "1" : "",
   };
 }
 
 // ------------------------------------------------------------------ renderização
 const TOKEN = /\{\{\s*([A-Za-z_]+\.[A-Za-z_]+)\s*\}\}/g;
 export const NUMBER_TOKEN = "{{contrato.numero}}";
+// Blocos condicionais {{#se modulo.fiscal}} ... {{/se}} (sem aninhar); a quebra de linha após cada marcador é consumida.
+const BLOCK = /\{\{\s*#se\s+([A-Za-z_]+\.[A-Za-z_]+)\s*\}\}[ \t]*\r?\n?([\s\S]*?)\{\{\s*\/se\s*\}\}[ \t]*\r?\n?/gi;
+const N_TOKEN = /\{\{\s*n\s*\}\}/gi;
+const STRAY_BLOCK = /\{\{\s*(?:#se[^}]*|\/se)\s*\}\}/gi;
 
 const KNOWN = new Map(CONTRACT_VARIABLES.map((v) => [v.key, v]));
 
@@ -290,7 +365,25 @@ export interface RenderResult {
 export function renderTemplate(body: string, vars: Record<string, string>, number: string = NUMBER_TOKEN): RenderResult {
   const missing = new Set<string>();
   const unknown = new Set<string>();
-  const text = body.replace(TOKEN, (whole, raw: string) => {
+
+  // Blocos condicionais: só entram se a condição for verdadeira; o {{n}} dentro deles é a numeração corrida
+  // dos blocos que entraram (1, 2, 3…), então ausentes não deixam buracos na contagem.
+  let blockNumber = 0;
+  const withoutBlocks = body.replace(BLOCK, (_whole, raw: string, inner: string) => {
+    const key = raw.toLowerCase();
+    if (!KNOWN.get(key)?.flag) {
+      unknown.add(`#se ${raw}`);
+      return "";
+    }
+    if (!(vars[key] ?? "").trim()) return "";
+    blockNumber += 1;
+    return inner.replace(N_TOKEN, String(blockNumber));
+  });
+  for (const stray of withoutBlocks.match(STRAY_BLOCK) ?? []) unknown.add(stray.slice(2, -2).trim());
+  N_TOKEN.lastIndex = 0;
+  if (N_TOKEN.test(withoutBlocks)) unknown.add("n (só vale dentro de um bloco {{#se …}})");
+
+  const text = withoutBlocks.replace(TOKEN, (whole, raw: string) => {
     const key = raw.toLowerCase();
     if (key === "contrato.numero") return number;
     const def = KNOWN.get(key);
@@ -298,6 +391,7 @@ export function renderTemplate(body: string, vars: Record<string, string>, numbe
       unknown.add(raw);
       return whole;
     }
+    if (def.flag) return (vars[key] ?? "").trim() ? "sim" : "não";
     const value = (vars[key] ?? "").trim();
     if (value) return value;
     if (def.optional) return "";

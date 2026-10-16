@@ -23,6 +23,7 @@ interface Row {
   phone: string | null;
   email: string | null;
   default_forum: string | null;
+  pix_key: string | null;
 }
 
 const s = (v: string | null) => v ?? "";
@@ -39,6 +40,7 @@ export async function getOffice(): Promise<OfficeData> {
     representativeRole: s(r.representative_role), representativeCrc: s(r.representative_crc),
     zip: s(r.zip), street: s(r.street), number: s(r.number), complement: s(r.complement), district: s(r.district),
     city: s(r.city), state: s(r.state), phone: s(r.phone), email: s(r.email), defaultForum: s(r.default_forum),
+    pixKey: s(r.pix_key),
   };
 }
 
@@ -51,6 +53,7 @@ export async function saveOffice(v: OfficeFormValues): Promise<{ error?: { code?
       representative_role: v.representativeRole, representative_crc: v.representativeCrc,
       zip: onlyDigits(v.zip), street: v.street, number: v.number, complement: v.complement, district: v.district,
       city: v.city, state: v.state.toUpperCase(), phone: onlyDigits(v.phone), email: v.email, default_forum: v.defaultForum,
+      pix_key: v.pixKey,
     },
   });
   return error ? { error } : {};

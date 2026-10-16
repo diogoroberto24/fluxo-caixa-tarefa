@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit",
     "seed": "node --env-file=.env.local scripts/seed.mjs",
     "seed:demo": "node --env-file=.env.local scripts/seed.mjs --demo",
+    "seed:contratos": "node --env-file=.env.local scripts/seed-contract-models.mjs",
     "clear:demo": "node --env-file=.env.local scripts/clear-demo.mjs",
     "backup": "node --env-file=.env.local scripts/backup.mjs",
     "restore": "node --env-file=.env.local scripts/restore.mjs"
