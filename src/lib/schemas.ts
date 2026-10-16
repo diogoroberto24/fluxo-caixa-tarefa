@@ -162,6 +162,24 @@ export const taskSchema = z.object({
 });
 export type TaskFormValues = z.infer<typeof taskSchema>;
 
+/** Lançar VÁRIAS tarefas do catálogo para o mesmo cliente de uma vez. */
+export const tasksBatchSchema = z.object({
+  clientId: required("Selecione o cliente."),
+  assigneeId: optional,
+  notes: optional,
+  items: z
+    .array(
+      z.object({
+        taskTypeId: required("Selecione a tarefa."),
+        dueDate: isoDate("Informe o prazo de cada tarefa."),
+        recurrence: z.enum(recurrenceValues),
+      }),
+    )
+    .min(1, "Selecione ao menos uma tarefa.")
+    .max(30, "Máximo de 30 tarefas por lançamento."),
+});
+export type TasksBatchValues = z.infer<typeof tasksBatchSchema>;
+
 /** Item do cadastro (catálogo) de tarefas. */
 export const taskTypeSchema = z.object({
   name: required("Informe o nome da tarefa."),
@@ -170,3 +188,35 @@ export const taskTypeSchema = z.object({
   active: z.enum(["true", "false"]),
 });
 export type TaskTypeFormValues = z.infer<typeof taskTypeSchema>;
+
+/** Dados do escritório que saem nos contratos. Tudo opcional ao salvar; a emissão exige os que o modelo usar. */
+export const officeSchema = z.object({
+  legalName: optional,
+  tradeName: optional,
+  document: z.string().trim().refine((v) => !v || isValidDocument(v), "CPF ou CNPJ inválido."),
+  crc: optional,
+  representativeName: optional,
+  representativeDocument: z.string().trim().refine((v) => !v || isValidDocument(v) && onlyDigits(v).length === 11, "CPF inválido."),
+  representativeRole: optional,
+  representativeCrc: optional,
+  zip: z.string().trim().refine((v) => !v || onlyDigits(v).length === 8, "CEP deve ter 8 dígitos."),
+  street: optional,
+  number: optional,
+  complement: optional,
+  district: optional,
+  city: optional,
+  state: z.string().trim().refine((v) => !v || /^[A-Za-z]{2}$/.test(v), "Use a sigla da UF (ex.: PR)."),
+  phone: z.string().trim().refine((v) => !v || [10, 11].includes(onlyDigits(v).length), "Telefone inválido."),
+  email: z.string().trim().refine((v) => !v || z.string().email().safeParse(v).success, "E-mail inválido."),
+  defaultForum: optional,
+});
+export type OfficeFormValues = z.infer<typeof officeSchema>;
+
+/** Modelo de contrato. */
+export const contractTemplateSchema = z.object({
+  name: required("Informe o nome do modelo."),
+  audience: z.enum(["FIXO", "EVENTUAL", "TODOS"]),
+  body: z.string().refine((v) => v.trim().length > 0, "O texto do modelo não pode ficar vazio.").refine((v) => v.length <= 200000, "Texto longo demais."),
+  active: z.enum(["true", "false"]),
+});
+export type ContractTemplateFormValues = z.infer<typeof contractTemplateSchema>;

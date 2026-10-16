@@ -122,6 +122,31 @@ export interface TaskType {
   active: boolean;
 }
 
+export type ContractAudience = "FIXO" | "EVENTUAL" | "TODOS";
+export type ContractStatus = "EMITIDO" | "CANCELADO";
+
+/** Modelo de contrato com campos {{grupo.campo}}. */
+export interface ContractTemplate {
+  id: string;
+  name: string;
+  audience: ContractAudience;
+  body: string;
+  active: boolean;
+}
+
+/** Contrato emitido (o texto é uma cópia do momento da emissão). */
+export interface Contract {
+  id: string;
+  number: string;
+  clientId: string;
+  templateName: string;
+  issuedOn: string;
+  status: ContractStatus;
+  cancelReason?: string;
+  /** Só no detalhe. */
+  body?: string;
+}
+
 export type TaskStatus = "PENDENTE" | "EM_ANDAMENTO" | "CONCLUIDA" | "CANCELADA";
 
 /** Uma ocorrência (execução) de uma tarefa. O histórico de um cliente/tarefa é a lista de execuções. */

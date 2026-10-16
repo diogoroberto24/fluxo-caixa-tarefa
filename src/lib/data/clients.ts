@@ -63,6 +63,12 @@ export async function insertOccasionalClient(
   return { data: rowToClient(data as ClientRow) };
 }
 
+export async function getClientById(id: string): Promise<Client | null> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("clients").select(CLIENT_COLUMNS).eq("id", id).maybeSingle();
+  return data ? rowToClient(data as ClientRow) : null;
+}
+
 /** Tipo gravado no banco (a fonte da verdade; o formulário nunca decide). */
 export async function getClientKind(id: string): Promise<"FIXO" | "EVENTUAL" | null> {
   const supabase = await createClient();

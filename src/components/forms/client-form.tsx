@@ -3,8 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
-import { useEffect, useRef, useState } from "react";
-import { lookupCepAction } from "@/app/(app)/clientes/actions";
+import { useState } from "react";
 import { useAppStore } from "@/components/providers/app-store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,7 @@ import { planInstallments } from "@/lib/installments";
 import { parseMoneyToCents } from "@/lib/money";
 import { clientCreateSchema, clientSchema, type ClientFormValues } from "@/lib/schemas";
 import { maskDocument, maskPhone, maskZip } from "@/lib/masks";
+import { useCepLookup } from "@/lib/use-cep-lookup";
 import { onlyDigits } from "@/lib/validators";
 import { MODULE_LABEL, TAX_REGIME_LABEL } from "@/services/clients";
 import type { Client, ClientKind, ServiceModule, TaxRegime } from "@/types/domain";
@@ -66,54 +66,14 @@ export function ClientForm({
   });
 
   // ---- CEP: preenche rua, bairro, cidade e UF sem sobrescrever o que o usuário digitou
-  type CepStatus = "idle" | "loading" | "ok" | "partial" | "notfound" | "error";
-  const [cepStatus, setCepStatus] = useState<CepStatus>("idle");
-  const zipDigits = onlyDigits(watch("zip") ?? "");
-  const lastLookup = useRef(editing && client ? onlyDigits(client.address.zip) : "");
-  const autoFilled = useRef<Partial<Record<"street" | "district" | "city" | "state", string>>>(
-    editing ? {} : { state: "PR" },
-  );
-
-  useEffect(() => {
-    if (zipDigits.length !== 8) {
-      setCepStatus("idle");
-      return;
-    }
-    if (zipDigits === lastLookup.current) return;
-    lastLookup.current = zipDigits;
-    let cancelled = false;
-    setCepStatus("loading");
-    lookupCepAction(zipDigits).then((r) => {
-      if (cancelled) return;
-      if (!r.ok) return setCepStatus("error");
-      if (!r.data) return setCepStatus("notfound");
-      for (const f of ["street", "district", "city", "state"] as const) {
-        const value = r.data[f];
-        const current = getValues(f);
-        // só preenche campo vazio ou que foi preenchido por uma busca anterior
-        if (value && (!current || current === autoFilled.current[f])) {
-          setValue(f, value, { shouldValidate: true, shouldDirty: true });
-          autoFilled.current[f] = value;
-        }
-      }
-      setCepStatus(r.data.street ? "ok" : "partial");
-      setFocus(r.data.street ? "number" : "street");
-    });
-    return () => {
-      cancelled = true;
-    };
-    // getValues/setValue/setFocus são estáveis
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [zipDigits]);
-
-  const cepHint: Record<CepStatus, string | undefined> = {
-    idle: undefined,
-    loading: "Buscando endereço…",
-    ok: "Endereço preenchido. Confira e informe o número.",
-    partial: "CEP geral da cidade: preencha rua e bairro.",
-    notfound: "CEP não encontrado. Preencha o endereço manualmente.",
-    error: "Consulta de CEP indisponível. Preencha manualmente.",
-  };
+  const cep = useCepLookup({
+    zip: watch("zip") ?? "",
+    initialZip: editing && client ? client.address.zip : undefined,
+    initialAuto: editing ? {} : { state: "PR" },
+    getValue: (f) => getValues(f),
+    setValue: (f, v) => setValue(f, v, { shouldValidate: true, shouldDirty: true }),
+    focus: (f) => setFocus(f),
+  });
 
   const kind = watch("kind");
   const eventual = kind === "EVENTUAL";
@@ -225,7 +185,7 @@ export function ClientForm({
         <Input {...register("municipalRegistration")} />
       </Field>
 
-      <Field label="CEP *" error={errors.zip?.message} hint={cepHint[cepStatus]} className="sm:col-span-2">
+      <Field label="CEP *" error={errors.zip?.message} hint={cep.hint} className="sm:col-span-2">
         <Controller
           control={control}
           name="zip"

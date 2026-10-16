@@ -12,6 +12,7 @@ export type Permission =
   | "task:write"
   | "task:update"
   | "report:view"
+  | "contract:manage"
   | "settings:manage";
 
 /**
@@ -20,6 +21,7 @@ export type Permission =
  */
 const MATRIX: Record<Role, Permission[]> = {
   ADMIN: [
+    "contract:manage",
     "service:edit",
     "client:write",
     "receivable:read",
@@ -32,7 +34,7 @@ const MATRIX: Record<Role, Permission[]> = {
     "report:view",
     "settings:manage",
   ],
-  CONTADOR: ["service:edit", "client:write", "receivable:read", "task:write", "task:update", "report:view"],
+  CONTADOR: ["contract:manage", "service:edit", "client:write", "receivable:read", "task:write", "task:update", "report:view"],
   FINANCEIRO: [
     "service:edit",
     "receivable:read",

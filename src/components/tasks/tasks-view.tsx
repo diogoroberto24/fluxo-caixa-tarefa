@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Field, Input, Select } from "@/components/ui/fields";
+import { monthOf } from "@/lib/dates";
 import { formatDate } from "@/lib/format";
 import { can } from "@/lib/permissions";
 import { cn, normalize } from "@/lib/utils";
@@ -21,7 +22,7 @@ import { TaskTypesDialog } from "./task-types-dialog";
 
 const COLS = "md:grid-cols-[1.2fr_1.5fr_1fr_0.8fr_1.2fr_0.9fr_0.9fr]";
 
-export function TasksView() {
+export function TasksView({ initialMonth = "" }: { initialMonth?: string }) {
   const { tasks, clients, users, today, currentUser } = useAppStore();
   const canWrite = can(currentUser.role, "task:write");
 
@@ -29,6 +30,7 @@ export function TasksView() {
   const [clientId, setClientId] = useState("");
   const [assigneeId, setAssigneeId] = useState("");
   const [category, setCategory] = useState("");
+  const [month, setMonth] = useState(initialMonth);
   const [dueFrom, setDueFrom] = useState("");
   const [dueTo, setDueTo] = useState("");
   const [query, setQuery] = useState("");
@@ -46,13 +48,14 @@ export function TasksView() {
       if (clientId && t.clientId !== clientId) return false;
       if (assigneeId && (assigneeId === "NONE" ? t.assigneeId : t.assigneeId !== assigneeId)) return false;
       if (category && t.category !== category) return false;
+      if (month && monthOf(t.dueDate) !== month) return false;
       if (dueFrom && t.dueDate < dueFrom) return false;
       if (dueTo && t.dueDate > dueTo) return false;
       if (q && !normalize(`${t.title} ${t.description ?? ""} ${clientName.get(t.clientId) ?? ""}`).includes(q)) return false;
       return true;
     });
     return sortTasks(list, today);
-  }, [tasks, status, clientId, assigneeId, category, dueFrom, dueTo, query, today, clientName]);
+  }, [tasks, status, clientId, assigneeId, category, month, dueFrom, dueTo, query, today, clientName]);
 
   const kpi = useMemo(() => {
     let overdue = 0, todayN = 0, open = 0, done = 0;
@@ -129,6 +132,16 @@ export function TasksView() {
               {categories.map((c) => <option key={c}>{c}</option>)}
             </Select>
           </Field>
+          <Field label="Mês do prazo">
+            <div className="flex gap-1">
+              <Input type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
+              {month && (
+                <Button variant="outline" size="icon" aria-label="Todos os meses" title="Todos os meses" onClick={() => setMonth("")}>
+                  ×
+                </Button>
+              )}
+            </div>
+          </Field>
           <Field label="Prazo de"><Input type="date" value={dueFrom} onChange={(e) => setDueFrom(e.target.value)} /></Field>
           <Field label="Prazo até"><Input type="date" value={dueTo} onChange={(e) => setDueTo(e.target.value)} /></Field>
           <Field label="Pesquisar" className="sm:col-span-2">
@@ -184,7 +197,7 @@ export function TasksView() {
         )}
       </Card>
 
-      <Dialog open={newOpen} onOpenChange={setNewOpen} title="Nova tarefa" description="Escolha a tarefa do cadastro. Tarefas recorrentes criam a próxima ocorrência ao serem concluídas.">
+      <Dialog open={newOpen} onOpenChange={setNewOpen} title="Nova tarefa" description="Marque uma ou mais tarefas do cadastro. Tarefas recorrentes criam a próxima ocorrência ao serem concluídas.">
         {newOpen && <TaskForm defaultClientId={clientId || null} onDone={() => setNewOpen(false)} />}
       </Dialog>
       <TaskDetailDialog taskId={openId} onClose={() => setOpenId(null)} />

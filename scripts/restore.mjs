@@ -40,7 +40,8 @@ const load = (table) => {
 // 1) valida tudo antes de tocar no banco
 const data = Object.fromEntries(
   ["profiles", "financial_categories", "clients", "client_fee_history", "recurrence_rules", "receivables",
-   "payables", "payments", "task_types", "task_definitions", "task_executions"].map((t) => [t, load(t)]),
+   "payables", "payments", "task_types", "task_definitions", "task_executions", "office_settings",
+   "contract_templates", "contract_counters", "contracts"].map((t) => [t, load(t)]),
 );
 
 // 2) o banco precisa estar sem clientes
@@ -92,6 +93,15 @@ await put("payables", data.payables.map((p) => ({ ...p, created_by: keep(p.creat
 await put("payments", data.payments.map((p) => ({ ...p, created_by: keep(p.created_by) })));
 await put("task_types", data.task_types.map((t) => ({ ...t, created_by: keep(t.created_by) })));
 await put("task_definitions", data.task_definitions.map((t) => ({ ...t, created_by: keep(t.created_by), assignee_id: keep(t.assignee_id) })));
+if (data.office_settings.length) await put("office_settings", data.office_settings.map((o) => ({ ...o, updated_by: keep(o.updated_by) })));
+await put("contract_templates", data.contract_templates.map((t) => ({ ...t, created_by: keep(t.created_by) })));
+// contract_counters usa a coluna "year" como chave (sem id)
+if (data.contract_counters.length) {
+  const { error } = await supabase.from("contract_counters").insert(data.contract_counters);
+  if (error) fail("restaurar contract_counters", error);
+  console.log(`contract_counters      ${data.contract_counters.length} linhas`);
+}
+await put("contracts", data.contracts.map((c) => ({ ...c, created_by: keep(c.created_by), canceled_by: keep(c.canceled_by) })));
 await put("task_executions", data.task_executions.map((e) => ({ ...e, completed_by: keep(e.completed_by) })));
 
 console.log("\nRestauração concluída. Confira os totais na tela e no manifesto do backup.");

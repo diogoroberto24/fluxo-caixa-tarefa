@@ -36,6 +36,8 @@ Projeto próprio do escritório, região São Paulo, com Data API **ligada**,
 11. `supabase/migrations/20261017000001_clientes_eventuais.sql` (clientes eventuais e serviço parcelado)
 12. `supabase/migrations/20261018000001_editar_servico_avulso.sql` (editar/reparcelar serviço avulso)
 13. `supabase/migrations/20261019000001_catalogo_tarefas.sql` (cadastro/catálogo de tarefas)
+14. `supabase/migrations/20261020000001_tarefas_em_lote.sql` (lançar várias tarefas de uma vez)
+15. `supabase/migrations/20261021000001_escritorio_contratos.sql` (dados do escritório e contratos)
 
 Cada uma deve terminar com "Success. No rows returned". Rodar de novo gera erro "já existe" (esperado, sem dano).
 Confira em **Table Editor**: `profiles`, `clients`, `client_fee_history`, `audit_log`, `financial_categories`,
@@ -95,6 +97,15 @@ Depois, em **Authentication → URL Configuration**, ajuste o *Site URL* para o 
 - Ao lançar uma tarefa para um cliente escolhe-se um item do catálogo (não há mais texto livre) e, se quiser, uma **observação opcional**.
 - O nome e a categoria são copiados para a tarefa no lançamento: renomear ou inativar um item vale para os próximos lançamentos; o histórico não muda.
 - Perfis: ADMIN e CONTADOR gerenciam o catálogo e lançam/editam tarefas.
+
+## Contratos e dados do escritório
+- **Configurações → Dados do escritório** (só o administrador edita): razão social, CNPJ, CRC, responsável pela assinatura, endereço, contato e foro padrão. Saem nos contratos.
+- **Contratos → Modelos de contrato:** o texto do contrato com campos automáticos, por exemplo `{{cliente.razao_social}}`, `{{contrato.honorarios_extenso}}`. Há um modelo para clientes fixos, outro para eventuais, ou um para todos.
+- **Emitir contrato:** escolhe-se o cliente e o modelo, ajustam-se as condições (início, vigência, serviços, honorários, vencimento, foro…) e confere-se a prévia. O texto é montado no **servidor** com os dados do banco; se faltar algum dado obrigatório o contrato não é emitido.
+- **Número ANO/NNN** gerado pelo banco (sem repetir). O texto emitido é uma **cópia** e nunca mais muda (mesmo que o modelo ou o cadastro mudem); só pode ser **cancelado**, nunca excluído.
+- **PDF:** abra o contrato e use **Imprimir / PDF** (no navegador: destino "Salvar como PDF").
+- Perfis: ADMIN e CONTADOR emitem e gerenciam modelos; só ADMIN altera os dados do escritório.
+- O modelo de contrato do escritório entra em **Modelos de contrato** (cole o texto e use a lista de campos).
 
 ## Digitação e endereço
 - CPF, CNPJ, telefone e CEP são formatados enquanto se digita; no banco ficam só os dígitos.

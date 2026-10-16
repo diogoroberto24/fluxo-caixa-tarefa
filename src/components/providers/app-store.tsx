@@ -30,7 +30,7 @@ import {
   type PaymentOpts,
 } from "@/app/(app)/financeiro/actions";
 import {
-  createTaskAction,
+  createTasksAction,
   saveTaskTypeAction,
   setTaskStatusAction,
   updateTaskAction,
@@ -43,6 +43,7 @@ import type {
   ReceivableFormValues,
   ServiceFormValues,
   TaskFormValues,
+  TasksBatchValues,
   TaskTypeFormValues,
 } from "@/lib/schemas";
 import type {
@@ -148,7 +149,7 @@ interface AppStore extends State {
   generateOccurrences: () => Result<{ created: number }>;
   // tarefas e cadastro (catálogo) de tarefas
   saveTaskType: (id: string | null, values: TaskTypeFormValues) => Result<TaskType, keyof TaskTypeFormValues>;
-  createTask: (values: TaskFormValues) => Result<Task, keyof TaskFormValues>;
+  createTasks: (values: TasksBatchValues) => Result<Task[], "clientId" | "items" | "assigneeId" | "notes">;
   updateTask: (id: string, values: TaskFormValues) => Result<Task, keyof TaskFormValues>;
   setTaskStatus: (
     id: string,
@@ -275,9 +276,9 @@ export function AppStoreProvider({
         if (r.ok) dispatch({ type: "upsertTaskType", taskType: r.data });
         return r;
       },
-      createTask: async (values) => {
-        const r = await createTaskAction(values);
-        if (r.ok) dispatch({ type: "upsertTask", task: r.data });
+      createTasks: async (values) => {
+        const r = await createTasksAction(values);
+        if (r.ok) for (const task of r.data) dispatch({ type: "upsertTask", task });
         return r;
       },
       updateTask: async (id, values) => {

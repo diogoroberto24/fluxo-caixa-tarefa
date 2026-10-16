@@ -20,6 +20,10 @@ export const TABLES = [
   "task_types",
   "task_definitions",
   "task_executions",
+  "office_settings",
+  "contract_templates",
+  "contract_counters",
+  "contracts",
   "audit_log",
 ];
 
@@ -37,7 +41,7 @@ const manifest = { createdAt: new Date().toISOString(), tables: {} };
 for (const table of TABLES) {
   const rows = [];
   for (let from = 0; ; from += PAGE) {
-    const { data, error } = await supabase.from(table).select("*").order("id").range(from, from + PAGE - 1);
+    const { data, error } = await supabase.from(table).select("*").order(table === "contract_counters" ? "year" : "id").range(from, from + PAGE - 1);
     if (error) fail(`exportar ${table}`, error);
     rows.push(...data);
     if (data.length < PAGE) break;
