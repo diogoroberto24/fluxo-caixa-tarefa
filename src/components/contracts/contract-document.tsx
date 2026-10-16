@@ -67,7 +67,7 @@ export function ContractDocument({ contract, clientName }: { contract: Contract;
         </p>
       )}
 
-      <article className="whitespace-pre-wrap rounded-xl border border-line bg-white p-8 font-serif text-[15px] leading-7 text-ink shadow-card print:rounded-none print:border-0 print:p-0 print:shadow-none">
+      <article className="whitespace-pre-wrap rounded-xl border border-line bg-white p-8 font-[Georgia,'Times_New_Roman',serif] text-[15px] leading-7 text-ink shadow-card print:rounded-none print:border-0 print:p-0 print:shadow-none">
         {contract.body}
       </article>
 

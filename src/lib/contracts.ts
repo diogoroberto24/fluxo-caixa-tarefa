@@ -262,7 +262,7 @@ export function buildContractVariables(args: {
     "contrato.forma_pagamento": eventual
       ? paymentText(cond)
       : cond.dueDay > 0
-        ? `mensal, com vencimento todo dia ${cond.dueDay} (${numberToWords(cond.dueDay)})`
+        ? `mensalmente, com vencimento todo dia ${cond.dueDay} (${numberToWords(cond.dueDay)})`
         : "",
     "contrato.foro": cond.forum.trim(),
     "contrato.observacoes": cond.notes.trim(),

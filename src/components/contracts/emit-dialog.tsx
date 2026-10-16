@@ -222,7 +222,7 @@ export function EmitContractDialog({
                   </p>
                 </div>
               )}
-              <div className="max-h-[520px] overflow-y-auto whitespace-pre-wrap rounded-lg border border-line bg-white p-4 font-serif text-[13.5px] leading-6 text-ink">
+              <div className="max-h-[520px] overflow-y-auto whitespace-pre-wrap rounded-lg border border-line bg-white p-4 font-[Georgia,'Times_New_Roman',serif] text-[13.5px] leading-6 text-ink">
                 {preview ? preview.text : "Preencha as condições ao lado para ver a prévia."}
               </div>
             </>
