@@ -1,10 +1,23 @@
 # Gestão Contábil
 
+![Next.js](https://img.shields.io/badge/Next.js-15-black) ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6)
+![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20RLS-3ecf8e) ![IA](https://img.shields.io/badge/IA-Gemini%20%2B%20tool%20calling-8e75b2)
+![Testes](https://img.shields.io/badge/testes-21%20aprovados-2ea44f)
+
 Sistema web de gestão para um escritório de contabilidade: clientes (mensalistas e eventuais), contas a receber
 (honorários e serviços avulsos parcelados), contas a pagar, tarefas recorrentes do escritório, contratos com
 modelos e relatórios, com permissões por perfil (Administrador, Contador, Financeiro e Operador).
+**Desenvolvido para um escritório real.**
 
 Inclui um **assistente de IA** que responde perguntas sobre os dados do escritório em linguagem natural.
+
+### Destaques técnicos
+- **Agente de IA com tool calling**, somente leitura e com ferramentas liberadas conforme o perfil (detalhes abaixo).
+- **Segurança em camadas**: permissões aplicadas no banco (RLS) e conferidas de novo no servidor; nada é excluído
+  (cancela/inativa) e as alterações ficam em log de auditoria.
+- **Integridade financeira**: pagamentos e recorrências por funções SQL atômicas e idempotentes; status de
+  cobrança derivado de datas e pagamentos, nunca digitado.
+- **Contratos** gerados no servidor a partir de modelos com campos e trechos condicionais, com numeração sem repetição.
 
 ## Tecnologias
 Next.js 15 (App Router, Server Actions) · React 19 · TypeScript · Tailwind CSS · Supabase (Postgres, Auth e RLS) ·
@@ -23,6 +36,16 @@ e responde, mostrando abaixo da resposta o que consultou.
    (`services/finance.ts` e `services/tasks.ts`: status derivado, resumo do mês, situação do cliente, urgência das
    tarefas) e devolve os números prontos em R$. O modelo só escolhe as ferramentas e redige a resposta.
 4. Os dados são carregados sob demanda, com o cliente Supabase da pessoa logada.
+
+```mermaid
+flowchart LR
+    A[Pergunta da equipe] --> B[Server Action<br/>sessão e perfil]
+    B --> C[Agente Gemini<br/>só as ferramentas do perfil]
+    C -- tool calling --> D[Consultas com as<br/>regras do sistema]
+    D --> E[(Supabase<br/>com RLS)]
+    D --> C
+    C --> F[Resposta e lista<br/>do que consultou]
+```
 
 **Segurança**
 - **Somente leitura:** nenhuma ferramenta grava, altera ou exclui. Pedidos de alteração são direcionados às telas.
@@ -70,3 +93,7 @@ Publicação, segurança e backup: [docs/DEPLOY.md](docs/DEPLOY.md).
 | `npm run clear:demo` | Remove só os dados de demonstração. |
 | `npm run seed:contratos` | Cadastra os modelos de contrato de `docs/modelos/`. |
 | `npm run backup` / `npm run restore` | Cópia de segurança e restauração (ver `docs/DEPLOY.md`). |
+
+## Autor
+**Diogo Roberto** — desenvolvedor full-stack, estudante de Análise e Desenvolvimento de Sistemas (FIAP).
+[LinkedIn](https://www.linkedin.com/in/diogo-roberto-b56899317/) · [GitHub](https://github.com/diogoroberto24)
