@@ -51,16 +51,30 @@ let userId;
   }
 }
 
-// 2) perfil ADMIN ativo (o trigger já criou o perfil inativo)
+// 2) escritório do administrador: SEED_OFFICE_ID, ou o primeiro escritório existente, ou um novo ("Escritório principal")
+let officeId = process.env.SEED_OFFICE_ID?.trim();
+if (!officeId) {
+  const first = await supabase.from("offices").select("id").order("created_at").limit(1).maybeSingle();
+  if (first.error) fail("consultar escritórios", first.error);
+  officeId = first.data?.id;
+}
+if (!officeId) {
+  const created = await supabase.from("offices").insert({ name: process.env.SEED_OFFICE_NAME?.trim() || "Escritório principal" }).select("id").single();
+  if (created.error) fail("criar escritório", created.error);
+  officeId = created.data.id;
+  console.log("Escritório criado.");
+}
+
+// 3) perfil ADMIN ativo (o trigger já criou o perfil inativo e sem escritório)
 {
   const { error } = await supabase
     .from("profiles")
-    .upsert({ id: userId, full_name: name, role: "ADMIN", active: true }, { onConflict: "id" });
+    .upsert({ id: userId, full_name: name, role: "ADMIN", active: true, office_id: officeId }, { onConflict: "id" });
   if (error) fail("perfil do administrador", error);
   console.log("OK: perfil ADMIN ativo.");
 }
 
-// 3) clientes de demonstração
+// 4) clientes de demonstração
 if (withDemo) {
   const seeds = JSON.parse(readFileSync(new URL("../src/data/demo-clients.json", import.meta.url), "utf8"));
   const rows = seeds.map((c) => ({
@@ -88,6 +102,7 @@ if (withDemo) {
     notes: c.notes ?? null,
     is_demo: true,
     created_by: userId,
+    office_id: officeId,
   }));
   const { error } = await supabase.from("clients").upsert(rows, { onConflict: "id" });
   if (error) fail("clientes de demonstração", error);
@@ -95,7 +110,7 @@ if (withDemo) {
 
   // financeiro de demonstração (recriado a cada execução, com datas relativas a hoje)
   await clearDemoFinance(supabase);
-  const cats = await supabase.from("financial_categories").select("id, name").eq("kind", "PAGAR");
+  const cats = await supabase.from("financial_categories").select("id, name").eq("kind", "PAGAR").eq("office_id", officeId);
   if (cats.error) fail("categorias", cats.error);
   const fin = buildDemoFinance({
     seeds,
@@ -104,7 +119,7 @@ if (withDemo) {
   });
   const ins = async (label, table, rows) => {
     if (!rows.length) return;
-    const { error } = await supabase.from(table).insert(rows);
+    const { error } = await supabase.from(table).insert(rows.map((r) => ({ ...r, office_id: officeId })));
     if (error) fail(label, error);
   };
   await ins("regras", "recurrence_rules", fin.rules);

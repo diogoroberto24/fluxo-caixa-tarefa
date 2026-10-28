@@ -39,6 +39,7 @@ Projeto próprio do escritório, região São Paulo, com Data API **ligada**,
 14. `supabase/migrations/20261020000001_tarefas_em_lote.sql` (lançar várias tarefas de uma vez)
 15. `supabase/migrations/20261021000001_escritorio_contratos.sql` (dados do escritório e contratos)
 16. `supabase/migrations/20261022000001_contrato_representante_pix.sql` (representante legal e RG do cliente, chave PIX do escritório, tipo de pessoa do modelo)
+17. `supabase/migrations/20261023000001_multi_escritorio.sql` (vários escritórios, cada um enxergando só os próprios dados) — **faça `npm run backup` antes**
 
 Cada uma deve terminar com "Success. No rows returned". Rodar de novo gera erro "já existe" (esperado, sem dano).
 Confira em **Table Editor**: `profiles`, `clients`, `client_fee_history`, `audit_log`, `financial_categories`,
@@ -109,6 +110,16 @@ Depois, em **Authentication → URL Configuration**, ajuste o *Site URL* para o 
 - Os modelos do escritório estão em `docs/modelos/*.modelo.txt` (empresa, pessoa física e serviço avulso) e entram no sistema com `npm run seed:contratos` (cadastra só os que ainda não existem; `-- --update` substitui o texto dos existentes). Cada modelo tem um **tipo de pessoa** (empresa, pessoa física ou qualquer) e só aparece para clientes compatíveis.
 - **Trechos condicionais:** `{{#se modulo.fiscal}} … {{/se}}` (também `modulo.contabil`, `modulo.folha`, `modulo.societario`) só sai no contrato se o serviço foi marcado na emissão; `{{n}}` numera os trechos que saírem (1, 2, 3…).
 - **Dados que o contrato de empresa exige do cliente:** representante legal (nome, RG, CPF e endereço de residência) no cadastro do cliente. Pessoa física: RG. Do escritório: CRC (só o número), categoria (ex.: CONTADOR), CPF do responsável, endereço, **chave PIX** e razão social (assina o contrato). Se faltar algo, a emissão é bloqueada e a tela lista o que falta.
+
+## Vários escritórios (isolamento de dados)
+Cada escritório tem a sua base: um usuário só enxerga e altera dados do **próprio** escritório, garantido pelo banco (RLS), não só pelas telas.
+- **Escritório novo (somente por você, com a chave secreta):** `npm run office:create -- --name "Escritório X" --admin-email adm@x.com --admin-name "Fulano"`. Cria o escritório, o administrador (senha provisória mostrada uma vez), as categorias padrão e os modelos de contrato (editáveis na tela).
+- **Mais usuários num escritório existente:** `npm run office:user -- --office <id> --email pessoa@x.com --name "Nome" --role CONTADOR` (ids com `npm run office:list`).
+- **Assinatura:** `npm run office:list -- --suspend <id>` suspende o escritório (ninguém dele acessa nada) e `-- --activate <id>` reativa. No futuro, o pagamento da assinatura só precisará ligar/desligar essa mesma chave.
+- **Não deixe o cadastro público aberto:** no Supabase, **Authentication → Sign In / Providers → desligue "Allow new users to sign up"**. Mesmo com o cadastro aberto, uma conta nova nasce sem escritório e sem perfil ativo (não vê nada), mas não há motivo para deixar aberto.
+- Todos os dados que já existiam passam para o escritório principal (criado pela migração com o nome do cadastro em Configurações).
+- CNPJ/CPF de cliente, nomes de modelo/tarefa/categoria e a numeração ANO/NNN dos contratos passam a valer **por escritório**.
+- `npm run seed:contratos` cadastra modelos e categorias que faltarem em todos os escritórios (ou `-- --office <id>`).
 
 ## Digitação e endereço
 - CPF, CNPJ, telefone e CEP são formatados enquanto se digita; no banco ficam só os dígitos.

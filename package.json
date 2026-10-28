@@ -13,7 +13,10 @@
     "clear:demo": "node --env-file=.env.local scripts/clear-demo.mjs",
     "backup": "node --env-file=.env.local scripts/backup.mjs",
     "restore": "node --env-file=.env.local scripts/restore.mjs",
-    "test": "vitest run"
+    "test": "vitest run",
+    "office:create": "node --env-file=.env.local scripts/create-office.mjs",
+    "office:user": "node --env-file=.env.local scripts/add-user.mjs",
+    "office:list": "node --env-file=.env.local scripts/offices.mjs"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.107",

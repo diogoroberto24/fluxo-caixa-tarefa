@@ -39,7 +39,7 @@ const load = (table) => {
 
 // 1) valida tudo antes de tocar no banco
 const data = Object.fromEntries(
-  ["profiles", "financial_categories", "clients", "client_fee_history", "recurrence_rules", "receivables",
+  ["offices", "profiles", "financial_categories", "clients", "client_fee_history", "recurrence_rules", "receivables",
    "payables", "payments", "task_types", "task_definitions", "task_executions", "office_settings",
    "contract_templates", "contract_counters", "contracts"].map((t) => [t, load(t)]),
 );
@@ -69,6 +69,19 @@ const put = async (table, rows, opts = {}) => {
   }
   console.log(`${table.padEnd(22)} ${rows.length} linhas`);
 };
+
+// escritórios do backup. As contas de login já existentes (recriadas pelo seed) ficam num escritório vazio criado
+// antes da restauração: se o backup tem UM escritório, elas são ligadas a ele ANTES de restaurar o resto
+// (as tarefas só aceitam responsável do mesmo escritório) e o escritório vazio sobrando é removido.
+await put("offices", data.offices, { ignoreDuplicates: true });
+if (data.offices.length === 1) {
+  const target = data.offices[0].id;
+  const moved = await supabase.from("profiles").update({ office_id: target }).or(`office_id.is.null,office_id.neq.${target}`);
+  if (moved.error) fail("ligar usuários existentes ao escritório restaurado", moved.error);
+  await supabase.from("offices").delete().neq("id", target); // só remove os vazios; se houver dados, o banco recusa e o escritório fica
+} else if (data.offices.length > 1) {
+  console.warn("Atenção: o backup tem vários escritórios. Ligue os usuários a cada um com: npm run office:user");
+}
 
 // categorias padrão já existem (migração): não duplica
 await put("financial_categories", data.financial_categories, { ignoreDuplicates: true });

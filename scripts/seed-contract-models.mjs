@@ -1,32 +1,20 @@
-// Cadastra no sistema os modelos de contrato do escritório (arquivos em docs/modelos/*.modelo.txt).
-//   npm run seed:contratos            -> cadastra só os que ainda não existem (não mexe nos que você já editou)
-//   npm run seed:contratos -- --update -> também SUBSTITUI o texto dos que já existem (perde edições feitas na tela)
-// Precisa da migração 0022 já executada.
-import { readFileSync } from "node:fs";
+// Cadastra os modelos de contrato (docs/modelos/*.modelo.txt) e as categorias padrão que ainda faltarem.
+//   npm run seed:contratos                       -> em TODOS os escritórios; só o que ainda não existe (não mexe no que foi editado)
+//   npm run seed:contratos -- --office <id>      -> só em um escritório
+//   npm run seed:contratos -- --update           -> também SUBSTITUI o texto dos modelos que já existem (perde edições feitas na tela)
 import { adminClient, fail } from "./_admin.mjs";
-
-const update = process.argv.includes("--update");
-const dir = new URL("../docs/modelos/", import.meta.url);
-
-const MODELS = [
-  { file: "contrato-servicos-contabeis.modelo.txt", name: "Prestação de serviços contábeis — empresa (cliente fixo)", audience: "FIXO", party: "PJ" },
-  { file: "contrato-servicos-contabeis-pessoa-fisica.modelo.txt", name: "Prestação de serviços contábeis — pessoa física (cliente fixo)", audience: "FIXO", party: "PF" },
-  { file: "contrato-servico-avulso.modelo.txt", name: "Prestação de serviço avulso — cliente eventual", audience: "EVENTUAL", party: "QUALQUER" },
-];
+import { arg, provisionOffice } from "./_provision.mjs";
 
 const supabase = adminClient();
-for (const m of MODELS) {
-  const body = readFileSync(new URL(m.file, dir), "utf8");
-  const found = await supabase.from("contract_templates").select("id").eq("name", m.name).maybeSingle();
-  if (found.error) fail(`consultar modelo "${m.name}"`, found.error);
-  if (found.data && !update) {
-    console.log(`já existe, mantido: ${m.name}`);
-    continue;
-  }
-  const row = { name: m.name, audience: m.audience, party: m.party, body, active: true };
-  const r = found.data
-    ? await supabase.from("contract_templates").update(row).eq("id", found.data.id)
-    : await supabase.from("contract_templates").insert(row);
-  if (r.error) fail(`gravar modelo "${m.name}"`, r.error);
-  console.log(`${found.data ? "atualizado" : "cadastrado"}: ${m.name}`);
+const only = arg("office");
+const offices = await supabase.from("offices").select("id, name").order("created_at");
+if (offices.error) fail("listar escritórios", offices.error);
+const targets = offices.data.filter((o) => !only || o.id === only);
+if (!targets.length) {
+  console.error("Nenhum escritório encontrado.");
+  process.exit(1);
+}
+for (const o of targets) {
+  console.log(`\n== ${o.name} (${o.id})`);
+  for (const line of await provisionOffice(supabase, o.id, { update: process.argv.includes("--update") })) console.log(line);
 }

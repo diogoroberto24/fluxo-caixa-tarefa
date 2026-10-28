@@ -5,7 +5,8 @@ import type { Role, User } from "@/types/domain";
 
 /**
  * Usuário logado com perfil ATIVO, ou null se não houver sessão válida OU se a conta
- * existir mas não tiver perfil ativo (conta recém-criada sem liberação).
+ * existir mas não tiver perfil ativo (conta recém-criada sem liberação) OU não pertencer a um escritório ativo
+ * (sem escritório, ou escritório suspenso/sem assinatura).
  *
  * É a verificação de autorização real (o middleware faz só uma checagem otimista).
  * Use em toda página, Server Action e rota que leia ou grave dados.
@@ -18,10 +19,13 @@ export const getCurrentUser = cache(async (): Promise<User | null> => {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, full_name, role, active")
+    .select("id, full_name, role, active, office_id, offices(id, active)")
     .eq("id", userId)
     .maybeSingle();
-  if (!profile || !profile.active) return null;
+  if (!profile || !profile.active || !profile.office_id) return null;
+  // o RLS só mostra o escritório do próprio usuário quando ele está ATIVO; suspenso = invisível
+  const office = Array.isArray(profile.offices) ? profile.offices[0] : profile.offices;
+  if (!office?.active) return null;
 
   const email = data?.claims?.email;
   return {

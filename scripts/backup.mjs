@@ -11,6 +11,7 @@ import { adminClient, fail } from "./_admin.mjs";
 export const TABLES = [
   "profiles",
   "financial_categories",
+  "offices",
   "clients",
   "client_fee_history",
   "recurrence_rules",

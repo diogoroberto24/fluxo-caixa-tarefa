@@ -10,7 +10,7 @@ export default async function LoginPage({
   const { erro } = await searchParams;
   const notice =
     erro === "acesso"
-      ? "Sua conta ainda não tem acesso liberado. Peça a um administrador para ativar seu perfil."
+      ? "Sua conta não tem acesso liberado: o perfil ainda não foi ativado, não está vinculado a um escritório ou a assinatura do escritório está inativa. Fale com o administrador do seu escritório."
       : undefined;
 
   return (
