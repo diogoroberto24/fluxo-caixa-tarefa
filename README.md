@@ -19,6 +19,16 @@ Inclui um **assistente de IA** que responde perguntas sobre os dados do escritó
   cobrança derivado de datas e pagamentos, nunca digitado.
 - **Contratos** gerados no servidor a partir de modelos com campos e trechos condicionais, com numeração sem repetição.
 
+## Telas
+![Assistente IA respondendo quem está inadimplente, com valores e dias de atraso por cliente](docs/imagens/gestao-assistente-ia.png)
+<p align="center"><sub>Assistente IA: o agente consultou a inadimplência e respondeu com os valores calculados pelo sistema.</sub></p>
+
+<p align="center">
+  <img src="docs/imagens/gestao-painel.png" width="49%" alt="Painel inicial com contas a receber, contas a pagar e clientes">
+  <img src="docs/imagens/gestao-contas-a-receber.png" width="49%" alt="Contas a receber com totais do mês e lista de cobranças">
+</p>
+<p align="center"><sub>Painel · Contas a receber — telas reais do sistema, com os dados de demonstração do projeto (<code>npm run seed:demo</code>).</sub></p>
+
 ## Tecnologias
 Next.js 15 (App Router, Server Actions) · React 19 · TypeScript · Tailwind CSS · Supabase (Postgres, Auth e RLS) ·
 React Hook Form + Zod · AI SDK + Google Gemini (tool calling) · Vitest · hospedagem na Vercel.
