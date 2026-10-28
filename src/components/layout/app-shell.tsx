@@ -7,7 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children, aiEnabled = false }: { children: ReactNode; aiEnabled?: boolean }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const { clients } = useAppStore();
   const hasDemo = clients.some((c) => c.isDemo);
@@ -16,7 +16,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen">
       {/* Sidebar fixa (desktop) */}
       <div className="fixed inset-y-0 left-0 z-40 hidden lg:block print:hidden">
-        <Sidebar />
+        <Sidebar aiEnabled={aiEnabled} />
       </div>
 
       {/* Drawer (tablet/celular) */}
@@ -32,7 +32,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             >
               <X className="h-5 w-5" />
             </button>
-            <Sidebar onNavigate={() => setMenuOpen(false)} />
+            <Sidebar aiEnabled={aiEnabled} onNavigate={() => setMenuOpen(false)} />
           </div>
         </div>
       )}

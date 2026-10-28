@@ -12,13 +12,16 @@
     "seed:contratos": "node --env-file=.env.local scripts/seed-contract-models.mjs",
     "clear:demo": "node --env-file=.env.local scripts/clear-demo.mjs",
     "backup": "node --env-file=.env.local scripts/backup.mjs",
-    "restore": "node --env-file=.env.local scripts/restore.mjs"
+    "restore": "node --env-file=.env.local scripts/restore.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@ai-sdk/google": "^4.0.107",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-dialog": "^1.3.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.3",
+    "ai": "^7.0.155",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.55.0",
@@ -37,6 +40,7 @@
     "autoprefixer": "^10.6.1",
     "postcss": "^8.5.29",
     "tailwindcss": "^3.4.19",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.5"
   }
 }

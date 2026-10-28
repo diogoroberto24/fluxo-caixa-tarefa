@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { AppStoreProvider } from "@/components/providers/app-store";
 import { getCurrentUser, listActiveUsers } from "@/lib/auth/session";
+import { isAiConfigured } from "@/lib/ai/model";
 import { listClients } from "@/lib/data/clients";
 import { listPayableCategories, listPayables, listReceivables } from "@/lib/data/finance";
 import { listTasks, listTaskTypes } from "@/lib/data/tasks";
@@ -40,7 +41,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       initialTasks={tasks}
       initialTaskTypes={taskTypes}
     >
-      <AppShell>{children}</AppShell>
+      <AppShell aiEnabled={isAiConfigured()}>{children}</AppShell>
     </AppStoreProvider>
   );
 }

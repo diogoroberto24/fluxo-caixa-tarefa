@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS } from "./nav";
 
-export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+export function Sidebar({ onNavigate, aiEnabled = false }: { onNavigate?: () => void; aiEnabled?: boolean }) {
   const pathname = usePathname();
 
   return (
@@ -25,7 +25,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <nav aria-label="Principal" className="mt-5 flex flex-col gap-1">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+        {NAV_ITEMS.filter((item) => aiEnabled || !item.requiresAi).map(({ href, label, icon: Icon }) => {
           const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
           return (
             <Link

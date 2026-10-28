@@ -7,7 +7,7 @@
       *Authentication → Users* e libere cada um em `profiles` (perfil e `active = true`).
 - [ ] *Authentication → Sign In / Providers*: **Allow new users to sign up desligado**.
 - [ ] Verificação em duas etapas ligada nas contas do Supabase, Vercel e e-mail do administrador.
-- [ ] `npm run typecheck` e `npm run build` sem erros.
+- [ ] `npm run typecheck`, `npm test` e `npm run build` sem erros.
 - [ ] Chaves que já passaram por chat, print ou arquivo compartilhado: **gere novas** no painel do Supabase.
 
 ## 2. Vercel
@@ -16,6 +16,9 @@
    - `NEXT_PUBLIC_SUPABASE_URL` (`https://<ref>.supabase.co`, sem `/rest/v1`)
    - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 3. **Não cadastre** `SUPABASE_SECRET_KEY` nem `SEED_*` (são só para scripts na sua máquina).
+   - Opcional, para o **Assistente IA**: `GOOGLE_GENERATIVE_AI_API_KEY` (e `AI_MODEL`, se quiser outro modelo).
+     É variável de servidor: nunca com prefixo `NEXT_PUBLIC_`. Com dados reais, use uma chave do plano pago
+     (no gratuito o Google pode usar o conteúdo enviado). Ver a seção "Assistente de IA" do `README.md`.
 4. Região das funções: **São Paulo (gru1)**, igual ao banco, para menor latência.
 5. Depois do primeiro deploy, no Supabase: *Authentication → URL Configuration* → *Site URL* = endereço publicado.
 

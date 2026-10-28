@@ -6,6 +6,7 @@ import {
   Home,
   Receipt,
   Settings,
+  Sparkles,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -14,6 +15,8 @@ export interface NavItem {
   href: string;
   label: string;
   icon: LucideIcon;
+  /** só aparece quando a IA está configurada no servidor */
+  requiresAi?: boolean;
 }
 
 export const NAV_ITEMS: NavItem[] = [
@@ -24,5 +27,6 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/tarefas", label: "Tarefas", icon: ClipboardCheck },
   { href: "/contratos", label: "Contratos", icon: FileSignature },
   { href: "/relatorios", label: "Relatórios", icon: FileBarChart },
+  { href: "/assistente", label: "Assistente IA", icon: Sparkles, requiresAi: true },
   { href: "/configuracoes", label: "Configurações", icon: Settings },
 ];
