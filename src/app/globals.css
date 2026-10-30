@@ -43,3 +43,15 @@
   .contract-sheet { padding: 0; font-size: 11.5pt; }
   .contract-title { font-size: 15pt; }
 }
+
+/* Impressão do contrato: sem o cabeçalho/rodapé do navegador (data, título, endereço); só "1 / 4" centralizado no rodapé. */
+.contract-sheet { page: contrato; }
+@page contrato {
+  margin: 20mm;
+  @top-left { content: ""; }
+  @top-center { content: ""; }
+  @top-right { content: ""; }
+  @bottom-left { content: ""; }
+  @bottom-right { content: ""; }
+  @bottom-center { content: counter(page) " / " counter(pages); font-family: "Times New Roman", Times, "Liberation Serif", serif; font-size: 10pt; color: #000; }
+}
