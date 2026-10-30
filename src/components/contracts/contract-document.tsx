@@ -22,7 +22,7 @@ export function ContractDocument({ contract, clientName }: { contract: Contract;
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const canceled = contract.status === "CANCELADO";
-  const layout = useMemo(() => layoutContract(contract.body), [contract.body]);
+  const layout = useMemo(() => layoutContract(contract.body ?? ""), [contract.body]);
 
   async function cancel() {
     if (busy) return;
