@@ -3,13 +3,14 @@
 import { ArrowLeft, Ban, Loader2, Printer } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { cancelContractAction } from "@/app/(app)/contratos/actions";
 import { useAppStore } from "@/components/providers/app-store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Field, Textarea } from "@/components/ui/fields";
+import { layoutContract } from "@/lib/contract-layout";
 import { formatDate } from "@/lib/format";
 import type { Contract } from "@/types/domain";
 
@@ -21,6 +22,7 @@ export function ContractDocument({ contract, clientName }: { contract: Contract;
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const canceled = contract.status === "CANCELADO";
+  const layout = useMemo(() => layoutContract(contract.body), [contract.body]);
 
   async function cancel() {
     if (busy) return;
@@ -67,8 +69,37 @@ export function ContractDocument({ contract, clientName }: { contract: Contract;
         </p>
       )}
 
-      <article className="whitespace-pre-wrap rounded-xl border border-line bg-white p-8 font-[Georgia,'Times_New_Roman',serif] text-[15px] leading-7 text-ink shadow-card print:rounded-none print:border-0 print:p-0 print:shadow-none">
-        {contract.body}
+      <article className="contract-sheet rounded-xl border border-line bg-white shadow-card print:rounded-none print:border-0 print:shadow-none">
+        <h1 className="contract-title">{layout.title}</h1>
+        {layout.blocks.map((b, i) =>
+          b.kind === "item" ? (
+            <p key={i} className="contract-item">
+              <span className="contract-item-n">{b.number}</span>
+              {b.text}
+            </p>
+          ) : b.kind === "clausula" ? (
+            <h2 key={i} className="contract-clausula">{b.text}</h2>
+          ) : b.kind === "area" ? (
+            <h3 key={i} className="contract-area">{b.text}</h3>
+          ) : b.kind === "paragrafo" ? (
+            <h3 key={i} className="contract-paragrafo">{b.text}</h3>
+          ) : (
+            <p key={i} className={b.kind === "data" ? "contract-data" : "contract-text"}>{b.text}</p>
+          ),
+        )}
+        {layout.signatures.length > 0 && (
+          <div className="contract-signatures">
+            {layout.signatures.map((s, i) => (
+              <div key={i}>
+                <div className="contract-sign-line" />
+                <div className="contract-sign-role">{s.role}</div>
+                {s.lines.map((l, j) => (
+                  <div key={j} className="contract-sign-info">{l}</div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
       </article>
 
       <Dialog open={cancelOpen} onOpenChange={(o) => !o && !busy && setCancelOpen(false)} title="Cancelar contrato?">
