@@ -9,3 +9,6 @@ next-env.d.ts
 .vercel
 
 backups
+
+# Legislação brasileira (clone parcial de github.com/ctresb/leis, só consulta local)
+docs/leis/

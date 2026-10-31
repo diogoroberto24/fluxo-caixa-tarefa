@@ -1,8 +1,8 @@
 CONTRATO DE PRESTAÇÃO DE SERVIÇOS CONTÁBEIS
 
-Pelo presente instrumento particular de Contrato de Prestação de Serviços Contábeis, de um lado MARIA DE SOUZA, brasileiro(a), inscrito(a) no CPF sob N° 529.982.247-25 e RG 9.876.543-2, residente e domiciliado(a) na Rua das Flores, 123 - Sala 4, Centro, Curitiba/PR, CEP 80010-000, doravante denominado(a) CONTRATANTE;
+Pelo presente instrumento particular de Contrato de Prestação de Serviços Contábeis, de um lado MARIA DE SOUZA, brasileiro(a), inscrito(a) no CPF sob nº 529.982.247-25 e RG 9.876.543-2, residente e domiciliado(a) na Rua das Flores, 123 - Sala 4, Centro, Curitiba/PR, CEP 80010-000, doravante denominado(a) CONTRATANTE;
 
-E, de outro lado, o profissional da Contabilidade ANDERSON CARDOZO DA SILVA, com escritório na Rua DA CARNAÚBA, nº 356, Cidade de Colombo, Estado do Paraná, inscrito no CPF n° 044.879.419-54, registrado no CRC/PR n° 079908/O-0, Categoria CONTADOR, doravante denominado CONTRATADO, mediante as cláusulas e condições seguintes, têm entre si justo e contratado o seguinte:
+E, de outro lado, o profissional da Contabilidade ANDERSON CARDOZO DA SILVA, com escritório na Rua DA CARNAÚBA, nº 356, Cidade de Colombo, Estado do Paraná, inscrito no CPF nº 044.879.419-54, registrado no CRC/PR nº 079908/O-0, Categoria CONTADOR, doravante denominado CONTRATADO, mediante as cláusulas e condições seguintes, têm entre si justo e contratado o seguinte:
 
 CLÁUSULA PRIMEIRA - OBJETO DO CONTRATO
 O profissional contratado obriga-se a prestar serviços profissionais ao contratante, abrangendo as seguintes áreas:
@@ -22,19 +22,19 @@ Parágrafo Primeiro.
 Responsabilizar-se-á o(a) contratado(a) por todos os documentos a ele(a) entregues pelo(a) contratante, enquanto permanecerem sob sua guarda para a consecução dos serviços pactuados, salvo comprovados casos fortuitos e motivos de força maior.
 
 Parágrafo Segundo.
-O(A) Contratante tem ciência da Lei 9.613/98, alterada pela Lei 12.683/2012, especificamente no que trata da lavagem de dinheiro, regulamentada pela Resolução CFC n.º 1.345/13 do Conselho Federal de Contabilidade.
+O(A) Contratante tem ciência da Lei 9.613/98, alterada pela Lei 12.683/2012, especificamente no que trata da lavagem de dinheiro, regulamentada pela Resolução CFC nº 1.721/2024 do Conselho Federal de Contabilidade.
 
 CLÁUSULA QUARTA - CARTA DE RESPONSABILIDADE
 O(A) contratante se obriga, antes do encerramento do exercício social, a fornecer ao contratado(a) a Carta de Responsabilidade da Administração.
 
 CLÁUSULA QUINTA
-As orientações dadas pelo(a) contratado(a) deverão ser seguidas pelo(a) contratante, eximindo-se o(a) primeiro(a) das consequências da não observância do seu cumprimento.
+As orientações dadas pelo(a) contratado(a) deverão ser seguidas pelo(a) contratante, eximindo-se o(a) contratado(a) das consequências da não observância do seu cumprimento.
 
 CLÁUSULA SEXTA
 O(A) contratado(a) se obriga a entregar ao contratante, mediante protocolo, em tempo hábil, os balancetes, o Balanço Patrimonial e as demais demonstrações contábeis, documentos necessários para que este efetue os devidos pagamentos e recolhimentos obrigatórios, bem como o comprovante de entrega das obrigações acessórias.
 
 Parágrafo Único.
-As multas decorrentes da entrega fora do prazo contratado das obrigações previstas no caput deste artigo, ou que forem decorrentes da imperfeição ou inexecução dos serviços por parte do(a) contratado(a), serão de sua responsabilidade.
+As multas decorrentes da entrega fora do prazo contratado das obrigações previstas no caput desta cláusula, ou que forem decorrentes da imperfeição ou inexecução dos serviços por parte do(a) contratado(a), serão de responsabilidade do(a) contratado(a).
 
 CLÁUSULA SÉTIMA - HONORÁRIOS
 O contratante pagará ao contratado pelos serviços prestados os honorários mensais de R$ 2.000,00 (dois mil reais), vencíveis todo dia 19 de cada mês, mediante PIX 47.308.673/0001-77.
@@ -61,10 +61,25 @@ Parágrafo Terceiro.
 O(A) contratado(a) obriga-se a entregar os documentos, Livros Contábeis e Fiscais e/ou arquivos eletrônicos ao contratante ou a outro profissional da Contabilidade por ele(a) indicado(a), após a assinatura do distrato entre as partes.
 
 CLÁUSULA DÉCIMA PRIMEIRA
-Os casos omissos serão resolvidos de comum acordo.
+Os casos omissos serão resolvidos de comum acordo entre as partes.
 
-Parágrafo Único.
-Em caso de impasse, as partes submeterão a solução do conflito ao procedimento arbitral, nos termos da Lei nº 9.307/96.
+CLÁUSULA DÉCIMA SEGUNDA - ADITAMENTO CONTRATUAL
+Qualquer alteração das condições deste contrato, inclusive dos serviços contratados, dos honorários e do prazo, somente terá validade se formalizada por termo aditivo escrito e assinado pelas partes.
+
+CLÁUSULA DÉCIMA TERCEIRA - PROTEÇÃO DE DADOS PESSOAIS
+As partes comprometem-se a observar a Lei nº 13.709/2018 (Lei Geral de Proteção de Dados Pessoais) no tratamento dos dados pessoais envolvidos neste contrato.
+
+Parágrafo Primeiro.
+O(A) contratante tem ciência de que o(a) contratado(a) tratará os dados pessoais seus e das pessoas a ele(a) vinculadas, como sócios, representantes e empregados, apenas para a execução dos serviços contratados e para o cumprimento de obrigações legais e regulatórias, podendo compartilhá-los somente com os órgãos públicos e demais destinatários necessários a esse fim.
+
+Parágrafo Segundo.
+O(A) contratado(a) adotará medidas de segurança adequadas para proteger os dados pessoais e os conservará pelo prazo exigido em lei ou, na ausência de exigência, pelo tempo necessário às finalidades deste contrato, eliminando-os ou anonimizando-os depois disso.
+
+Parágrafo Terceiro.
+O(A) contratante declara que os dados de terceiros por ele(a) fornecidos ao(à) contratado(a) foram obtidos de forma lícita e que pode compartilhá-los para a execução dos serviços contratados.
+
+CLÁUSULA DÉCIMA QUARTA - FORO
+Fica eleito o foro da comarca de Colombo/PR para dirimir os conflitos decorrentes deste contrato.
 
 E, por estarem justos e contratados, firmam o presente instrumento em duas vias de igual teor e forma.
 

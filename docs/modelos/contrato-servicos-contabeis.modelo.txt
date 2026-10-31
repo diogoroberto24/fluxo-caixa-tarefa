@@ -1,8 +1,8 @@
 CONTRATO DE PRESTAÇÃO DE SERVIÇOS CONTÁBEIS
 
-Pelo presente instrumento particular de Contrato de Prestação de Serviços Contábeis, de um lado {{cliente.razao_social}}, com sede na {{cliente.endereco}}, inscrita no CNPJ sob N° {{cliente.documento}}, doravante denominada CONTRATANTE, neste ato representada por {{cliente.representante_nome}}, brasileiro(a), RG {{cliente.representante_rg}} e CPF {{cliente.representante_cpf}}, residente e domiciliado(a) na {{cliente.representante_endereco}};
+Pelo presente instrumento particular de Contrato de Prestação de Serviços Contábeis, de um lado {{cliente.razao_social}}, com sede na {{cliente.endereco}}, inscrita no CNPJ sob nº {{cliente.documento}}, doravante denominada CONTRATANTE, neste ato representada por {{cliente.representante_nome}}, brasileiro(a), RG {{cliente.representante_rg}} e CPF {{cliente.representante_cpf}}, residente e domiciliado(a) na {{cliente.representante_endereco}};
 
-E, de outro lado, o profissional da Contabilidade {{escritorio.responsavel_nome}}, com escritório na {{escritorio.logradouro}}, nº {{escritorio.numero}}, Cidade de {{escritorio.cidade}}, Estado {{escritorio.estado_artigo}}, inscrito no CPF n° {{escritorio.responsavel_cpf}}, registrado no CRC/{{escritorio.uf}} n° {{escritorio.responsavel_crc}}, Categoria {{escritorio.responsavel_cargo}}, doravante denominado CONTRATADO, mediante as cláusulas e condições seguintes, têm entre si justo e contratado o seguinte:
+E, de outro lado, o profissional da Contabilidade {{escritorio.responsavel_nome}}, com escritório na {{escritorio.logradouro}}, nº {{escritorio.numero}}, Cidade de {{escritorio.cidade}}, Estado {{escritorio.estado_artigo}}, inscrito no CPF nº {{escritorio.responsavel_cpf}}, registrado no CRC/{{escritorio.uf}} nº {{escritorio.responsavel_crc}}, Categoria {{escritorio.responsavel_cargo}}, doravante denominado CONTRATADO, mediante as cláusulas e condições seguintes, têm entre si justo e contratado o seguinte:
 
 CLÁUSULA PRIMEIRA - OBJETO DO CONTRATO
 O profissional contratado obriga-se a prestar serviços profissionais ao contratante, abrangendo as seguintes áreas:
@@ -23,7 +23,7 @@ O profissional contratado obriga-se a prestar serviços profissionais ao contrat
 {{#se modulo.folha}}
 
 {{n}}. Obrigações Trabalhistas - Folha de Pagamento
-{{n}}.1 Para os registros de empregados será acrescido ao Honorário Contábil conforme a demanda e necessidades deste serviço, sendo livre entre as partes o acerto de valores adicionais aos honorários contábeis, ou já estabelecidos em cláusulas específicas de contrato.
+{{n}}.1 Para os registros de empregados serão acrescidos aos honorários contábeis, conforme a demanda e as necessidades deste serviço, sendo livre entre as partes o acerto de valores adicionais aos honorários contábeis, ou já estabelecidos em cláusulas específicas de contrato.
 {{n}}.2 Registros de empregados e serviços correlatos.
 {{n}}.3 Elaboração da folha de pagamento dos empregados e de pró-labore, bem como das guias de recolhimento dos encargos sociais e tributos afins.
 {{n}}.4 Elaboração, orientação e controle da aplicação dos preceitos da Consolidação das Leis do Trabalho, bem como daqueles atinentes à Previdência Social e de outros aplicáveis às relações de trabalho mantidas pela contratante.
@@ -31,9 +31,9 @@ O profissional contratado obriga-se a prestar serviços profissionais ao contrat
 {{#se modulo.societario}}
 
 {{n}}. Serviços Societários
-{{n}}.1 Poderá a Contratada cobrar valores sobre os serviços de (alterações contratuais, como baixa, abertura de filiais, renovação de alvará e Corpo de Bombeiros, Meio Ambiente, Vigilância Sanitária, Anvisa, pedido de parcelamento, registro de marcas e patentes, pedido de cadastro de substituto tributário), e demais serviços não abrangidos por obrigatoriedade contábil, que serão cobrados como valores adicionais aos serviços contábeis, por se tratar de produtos correlacionados a áreas contábeis.
-{{n}}.2 Poderá a Contratada realizar a cobrança sobre os serviços de credenciamento da ANTT.
-{{n}}.3 Poderá a Contratada realizar a cobrança sobre os serviços de gerenciamento administrativo.
+{{n}}.1 Poderá o(a) contratado(a) cobrar valores sobre os serviços de (alterações contratuais, como baixa, abertura de filiais, renovação de alvará e Corpo de Bombeiros, Meio Ambiente, Vigilância Sanitária, Anvisa, pedido de parcelamento, registro de marcas e patentes, pedido de cadastro de substituto tributário), e demais serviços não abrangidos por obrigatoriedade contábil, que serão cobrados como valores adicionais aos serviços contábeis, por se tratar de produtos correlacionados a áreas contábeis.
+{{n}}.2 Poderá o(a) contratado(a) realizar a cobrança sobre os serviços de credenciamento da ANTT.
+{{n}}.3 Poderá o(a) contratado(a) realizar a cobrança sobre os serviços de gerenciamento administrativo.
 {{/se}}
 
 CLÁUSULA SEGUNDA - RESPONSABILIDADE TÉCNICA
@@ -46,19 +46,19 @@ Parágrafo Primeiro.
 Responsabilizar-se-á o(a) contratado(a) por todos os documentos a ele(a) entregues pelo(a) contratante, enquanto permanecerem sob sua guarda para a consecução dos serviços pactuados, salvo comprovados casos fortuitos e motivos de força maior.
 
 Parágrafo Segundo.
-O(A) Contratante tem ciência da Lei 9.613/98, alterada pela Lei 12.683/2012, especificamente no que trata da lavagem de dinheiro, regulamentada pela Resolução CFC n.º 1.345/13 do Conselho Federal de Contabilidade.
+O(A) Contratante tem ciência da Lei 9.613/98, alterada pela Lei 12.683/2012, especificamente no que trata da lavagem de dinheiro, regulamentada pela Resolução CFC nº 1.721/2024 do Conselho Federal de Contabilidade.
 
 CLÁUSULA QUARTA - CARTA DE RESPONSABILIDADE
 O(A) contratante se obriga, antes do encerramento do exercício social, a fornecer ao contratado(a) a Carta de Responsabilidade da Administração.
 
 CLÁUSULA QUINTA
-As orientações dadas pelo(a) contratado(a) deverão ser seguidas pelo(a) contratante, eximindo-se o(a) primeiro(a) das consequências da não observância do seu cumprimento.
+As orientações dadas pelo(a) contratado(a) deverão ser seguidas pelo(a) contratante, eximindo-se o(a) contratado(a) das consequências da não observância do seu cumprimento.
 
 CLÁUSULA SEXTA
 O(A) contratado(a) se obriga a entregar ao contratante, mediante protocolo, em tempo hábil, os balancetes, o Balanço Patrimonial e as demais demonstrações contábeis, documentos necessários para que este efetue os devidos pagamentos e recolhimentos obrigatórios, bem como o comprovante de entrega das obrigações acessórias.
 
 Parágrafo Único.
-As multas decorrentes da entrega fora do prazo contratado das obrigações previstas no caput deste artigo, ou que forem decorrentes da imperfeição ou inexecução dos serviços por parte do(a) contratado(a), serão de sua responsabilidade.
+As multas decorrentes da entrega fora do prazo contratado das obrigações previstas no caput desta cláusula, ou que forem decorrentes da imperfeição ou inexecução dos serviços por parte do(a) contratado(a), serão de responsabilidade do(a) contratado(a).
 
 CLÁUSULA SÉTIMA - HONORÁRIOS
 O contratante pagará ao contratado pelos serviços prestados os honorários mensais de {{contrato.honorarios}} ({{contrato.honorarios_extenso}}), vencíveis todo dia {{contrato.vencimento_dia}} de cada mês, mediante PIX {{escritorio.chave_pix}}.
@@ -85,10 +85,25 @@ Parágrafo Terceiro.
 O(A) contratado(a) obriga-se a entregar os documentos, Livros Contábeis e Fiscais e/ou arquivos eletrônicos ao contratante ou a outro profissional da Contabilidade por ele(a) indicado(a), após a assinatura do distrato entre as partes.
 
 CLÁUSULA DÉCIMA PRIMEIRA
-Os casos omissos serão resolvidos de comum acordo.
+Os casos omissos serão resolvidos de comum acordo entre as partes.
 
-Parágrafo Único.
-Em caso de impasse, as partes submeterão a solução do conflito ao procedimento arbitral, nos termos da Lei nº 9.307/96.
+CLÁUSULA DÉCIMA SEGUNDA - ADITAMENTO CONTRATUAL
+Qualquer alteração das condições deste contrato, inclusive dos serviços contratados, dos honorários e do prazo, somente terá validade se formalizada por termo aditivo escrito e assinado pelas partes.
+
+CLÁUSULA DÉCIMA TERCEIRA - PROTEÇÃO DE DADOS PESSOAIS
+As partes comprometem-se a observar a Lei nº 13.709/2018 (Lei Geral de Proteção de Dados Pessoais) no tratamento dos dados pessoais envolvidos neste contrato.
+
+Parágrafo Primeiro.
+O(A) contratante tem ciência de que o(a) contratado(a) tratará os dados pessoais seus e das pessoas a ele(a) vinculadas, como sócios, representantes e empregados, apenas para a execução dos serviços contratados e para o cumprimento de obrigações legais e regulatórias, podendo compartilhá-los somente com os órgãos públicos e demais destinatários necessários a esse fim.
+
+Parágrafo Segundo.
+O(A) contratado(a) adotará medidas de segurança adequadas para proteger os dados pessoais e os conservará pelo prazo exigido em lei ou, na ausência de exigência, pelo tempo necessário às finalidades deste contrato, eliminando-os ou anonimizando-os depois disso.
+
+Parágrafo Terceiro.
+O(A) contratante declara que os dados de terceiros por ele(a) fornecidos ao(à) contratado(a) foram obtidos de forma lícita e que pode compartilhá-los para a execução dos serviços contratados.
+
+CLÁUSULA DÉCIMA QUARTA - FORO
+Fica eleito o foro da comarca de {{contrato.foro}} para dirimir os conflitos decorrentes deste contrato.
 
 E, por estarem justos e contratados, firmam o presente instrumento em duas vias de igual teor e forma.
 
