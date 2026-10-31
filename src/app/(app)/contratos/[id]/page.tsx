@@ -4,6 +4,8 @@ import { AccessRestricted } from "@/components/layout/coming-soon";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getClientById } from "@/lib/data/clients";
 import { getContract } from "@/lib/data/contracts";
+import { getOffice } from "@/lib/data/office";
+import { officeLogo } from "@/lib/office-branding";
 import { can } from "@/lib/permissions";
 
 export const metadata = { title: "Contrato | Anderson Cardozo" };
@@ -17,6 +19,6 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
   if (!UUID.test(id)) notFound();
   const contract = await getContract(id);
   if (!contract) notFound();
-  const client = await getClientById(contract.clientId);
-  return <ContractDocument contract={contract} clientName={client?.tradeName ?? "Cliente removido"} />;
+  const [client, office] = await Promise.all([getClientById(contract.clientId), getOffice()]);
+  return <ContractDocument contract={contract} clientName={client?.tradeName ?? "Cliente removido"} logoSrc={officeLogo(office.document)} />;
 }

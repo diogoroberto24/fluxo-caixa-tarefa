@@ -15,7 +15,7 @@ import { formatDate } from "@/lib/format";
 import type { Contract } from "@/types/domain";
 
 /** Contrato emitido: texto pronto para imprimir ou salvar em PDF (Imprimir → Salvar como PDF). */
-export function ContractDocument({ contract, clientName }: { contract: Contract; clientName: string }) {
+export function ContractDocument({ contract, clientName, logoSrc }: { contract: Contract; clientName: string; logoSrc?: string | null }) {
   const router = useRouter();
   const { notify } = useAppStore();
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -69,7 +69,22 @@ export function ContractDocument({ contract, clientName }: { contract: Contract;
         </p>
       )}
 
-      <article className="contract-sheet rounded-xl border border-line bg-white shadow-card print:rounded-none print:border-0 print:shadow-none">
+      <article className={`contract-sheet rounded-xl border border-line bg-white shadow-card print:rounded-none print:border-0 print:shadow-none`}>
+        {/* O cabeçalho da tabela se repete no topo de cada página impressa: é assim que a logo sai em todas. */}
+        <table className="contract-frame">
+          {logoSrc && (
+            <thead>
+              <tr>
+                <td>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={logoSrc} alt="" className="contract-letterhead" />
+                </td>
+              </tr>
+            </thead>
+          )}
+          <tbody>
+            <tr>
+              <td>
         <h1 className="contract-title">{layout.title}</h1>
         {layout.blocks.map((b, i) =>
           b.kind === "item" ? (
@@ -100,6 +115,10 @@ export function ContractDocument({ contract, clientName }: { contract: Contract;
             ))}
           </div>
         )}
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </article>
 
       <Dialog open={cancelOpen} onOpenChange={(o) => !o && !busy && setCancelOpen(false)} title="Cancelar contrato?">

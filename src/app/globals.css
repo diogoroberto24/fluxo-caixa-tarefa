@@ -55,3 +55,8 @@
   @bottom-right { content: ""; }
   @bottom-center { content: counter(page) " / " counter(pages); font-family: "Times New Roman", Times, "Liberation Serif", serif; font-size: 10pt; color: #000; }
 }
+
+/* Logo do escritório: no topo do contrato; é o cabeçalho (thead) da tabela, que o navegador repete em todas as páginas impressas. */
+.contract-frame { width: 100%; border-collapse: collapse; }
+.contract-frame td { padding: 0; }
+.contract-letterhead { display: block; width: 5.5cm; height: auto; margin: 0 auto 1.8rem; }
