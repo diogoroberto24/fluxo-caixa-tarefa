@@ -69,7 +69,7 @@ export function ContractDocument({ contract, clientName, logoSrc }: { contract: 
         </p>
       )}
 
-      <article className={`contract-sheet rounded-xl border border-line bg-white shadow-card print:rounded-none print:border-0 print:shadow-none`}>
+      <article className={`contract-sheet${logoSrc ? " contract-has-logo" : ""} rounded-xl border border-line bg-white shadow-card print:rounded-none print:border-0 print:shadow-none`}>
         {/* O cabeçalho da tabela se repete no topo de cada página impressa: é assim que a logo sai em todas. */}
         <table className="contract-frame">
           {logoSrc && (
