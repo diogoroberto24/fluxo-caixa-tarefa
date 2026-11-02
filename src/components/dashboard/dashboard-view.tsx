@@ -2,14 +2,15 @@
 
 import { useState } from "react";
 import { useAppStore } from "@/components/providers/app-store";
+import { CashFlowChart } from "./cash-flow-chart";
 import { ClientContext } from "./client-context";
-import { ClientSearch } from "./client-search";
 import { FeeHistoryDialog } from "./fee-history-dialog";
 import { QuickActions } from "./quick-actions";
 import { SummaryCards } from "./summary-cards";
 import { TaskDetailDialog } from "@/components/tasks/task-detail-dialog";
 import { TasksPanel } from "./tasks-panel";
 
+/** Tela de início: tarefas primeiro (o que fazer hoje); embaixo, contas a receber/pagar e o fluxo de caixa. */
 export function DashboardView() {
   const { currentUser } = useAppStore();
   const [clientId, setClientId] = useState<string | null>(null);
@@ -18,16 +19,15 @@ export function DashboardView() {
 
   return (
     <div className="mx-auto flex max-w-[1280px] flex-col gap-6">
-      <div>
-        <h1 className="text-[26px] font-bold leading-9 text-navy">
-          Olá, {currentUser.name.split(" ")[0]}!
-        </h1>
-        <p className="text-sm text-slate-500">Aqui está um resumo da sua movimentação hoje.</p>
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+        <div>
+          <h1 className="text-[26px] font-bold leading-9 text-navy">
+            Olá, {currentUser.name.split(" ")[0]}!
+          </h1>
+          <p className="text-sm text-slate-500">Estas são as suas tarefas e a sua movimentação de hoje.</p>
+        </div>
+        <QuickActions selectedClientId={clientId} onClientCreated={setClientId} />
       </div>
-
-      <SummaryCards />
-
-      <ClientSearch selectedId={clientId} onSelect={setClientId} onOpenFees={setFeeClientId} />
 
       {clientId && (
         <ClientContext
@@ -37,11 +37,11 @@ export function DashboardView() {
         />
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,1fr)]">
-        <TasksPanel clientId={clientId} onOpenTask={setTaskId} />
-        <div className="xl:self-start">
-          <QuickActions selectedClientId={clientId} onClientCreated={setClientId} />
-        </div>
+      <TasksPanel clientId={clientId} onSelectClient={setClientId} onOpenTask={setTaskId} />
+
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.55fr)]">
+        <SummaryCards stacked />
+        <CashFlowChart />
       </div>
 
       <FeeHistoryDialog clientId={feeClientId} onClose={() => setFeeClientId(null)} />

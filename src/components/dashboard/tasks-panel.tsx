@@ -14,11 +14,13 @@ import { cn } from "@/lib/utils";
 import {
   filterTasks,
   isTaskOpen,
+  NEAR_DEADLINE_DAYS,
   sortTasks,
   taskUrgency,
   type TaskFilter,
 } from "@/services/tasks";
 import type { Task } from "@/types/domain";
+import { ClientFilter } from "./client-filter";
 
 const TABS: { value: TaskFilter; label: string }[] = [
   { value: "TODAS", label: "Todas" },
@@ -35,9 +37,11 @@ const COLS = "md:grid-cols-[1.4fr_1.5fr_0.9fr_1.4fr_1fr_24px]";
  */
 export function TasksPanel({
   clientId,
+  onSelectClient,
   onOpenTask,
 }: {
   clientId: string | null;
+  onSelectClient: (id: string | null) => void;
   onOpenTask: (id: string) => void;
 }) {
   const { tasks, clients, today } = useAppStore();
@@ -70,6 +74,18 @@ export function TasksPanel({
         : [];
     return { rows: list, hiddenCount: hidden, overdue: late };
   }, [tasks, month, currentMonth, filter, clientId, today, showRest]);
+
+  // Contadores do topo: atrasadas/hoje/próximas consideram todas as tarefas em aberto; concluídas, o mês exibido.
+  const stats = useMemo(() => {
+    const mine = clientId ? tasks.filter((t) => t.clientId === clientId) : tasks;
+    const count = (u: ReturnType<typeof taskUrgency>) => mine.filter((t) => taskUrgency(t, today) === u).length;
+    return {
+      late: count("ATRASADA"),
+      today: count("HOJE"),
+      soon: count("PROXIMA"),
+      done: mine.filter((t) => t.status === "CONCLUIDA" && monthOf(t.dueDate) === month).length,
+    };
+  }, [tasks, clientId, today, month]);
 
   const showClientCol = !clientId;
 
@@ -145,7 +161,14 @@ export function TasksPanel({
         </div>
       </CardHeader>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 px-5 pt-3">
+      <div className="grid grid-cols-2 gap-3 px-5 pt-4 md:grid-cols-4">
+        <Stat label="Atrasadas" value={stats.late} tone="danger" />
+        <Stat label="Vencem hoje" value={stats.today} tone="warning" />
+        <Stat label={`Próximos ${NEAR_DEADLINE_DAYS} dias`} value={stats.soon} tone="primary" />
+        <Stat label={`Concluídas em ${monthLabel(month).split(" ")[0]}`} value={stats.done} tone="success" />
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-2 px-5 pt-4">
         <div className="flex flex-wrap gap-2" role="tablist" aria-label="Filtro de tarefas">
           {TABS.map((t) => (
             <button
@@ -162,9 +185,7 @@ export function TasksPanel({
             </button>
           ))}
         </div>
-        <Link href={`/tarefas?mes=${month}`} className="text-xs font-medium text-primary hover:underline">
-          Ver no Gerenciador de Tarefas →
-        </Link>
+        <ClientFilter selectedId={clientId} onSelect={onSelectClient} />
       </div>
 
       <div className="px-5 pb-4 pt-3">
@@ -196,16 +217,40 @@ export function TasksPanel({
           </>
         )}
 
-        {filter === "TODAS" && (hiddenCount > 0 || showRest) && (
-          <button
-            type="button"
-            onClick={() => setShowRest((s) => !s)}
-            className="mt-3 text-xs font-semibold text-primary hover:underline"
-          >
-            {showRest ? "Ocultar concluídas e canceladas" : `Ver as ${hiddenCount} concluídas/canceladas`}
-          </button>
-        )}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+          {filter === "TODAS" && (hiddenCount > 0 || showRest) ? (
+            <button type="button" onClick={() => setShowRest((s) => !s)} className="font-semibold text-primary hover:underline">
+              {showRest ? "Ocultar concluídas e canceladas" : `Ver as ${hiddenCount} concluídas/canceladas`}
+            </button>
+          ) : (
+            <span />
+          )}
+          <Link href={`/tarefas?mes=${month}`} className="font-semibold text-primary hover:underline">
+            Ver no Gerenciador de Tarefas →
+          </Link>
+        </div>
       </div>
     </Card>
+  );
+}
+
+const STAT_TONE = {
+  danger: { box: "border-danger-line bg-danger-soft", value: "text-danger", dot: "bg-danger" },
+  warning: { box: "border-warning-line bg-warning-soft", value: "text-warning", dot: "bg-warning" },
+  primary: { box: "border-line bg-white", value: "text-navy", dot: "bg-primary" },
+  success: { box: "border-line bg-white", value: "text-navy", dot: "bg-success" },
+};
+
+function Stat({ label, value, tone }: { label: string; value: number; tone: keyof typeof STAT_TONE }) {
+  // Atrasadas/hoje só ganham cor de alerta quando há algo a fazer.
+  const t = (tone === "danger" || tone === "warning") && value === 0 ? STAT_TONE.primary : STAT_TONE[tone];
+  return (
+    <div className={cn("rounded-lg border px-3 py-2.5", t.box)}>
+      <div className="flex items-center gap-1.5 text-xs text-slate-600">
+        <span className={cn("h-2 w-2 rounded-full", STAT_TONE[tone].dot)} aria-hidden />
+        {label}
+      </div>
+      <div className={cn("mt-0.5 text-[22px] font-bold leading-tight tabular-nums", t.value)}>{value}</div>
+    </div>
   );
 }

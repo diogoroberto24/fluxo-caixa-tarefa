@@ -1,4 +1,4 @@
-import { addDays, diffDays, monthOf } from "@/lib/dates";
+import { addDays, addMonths, diffDays, monthOf } from "@/lib/dates";
 import type {
   ChargeStatus,
   Client,
@@ -137,6 +137,38 @@ export function openPayables(payables: Payable[], today: string) {
     .map((p) => ({ payable: p, status: chargeStatus(p, today) }))
     .filter((row) => isOpen(row.status))
     .sort((a, b) => a.payable.dueDate.localeCompare(b.payable.dueDate));
+}
+
+export interface CashFlowMonth {
+  /** "YYYY-MM". */
+  month: string;
+  /** Recebido no mês (pela data do pagamento). */
+  receivedCents: number;
+  /** Pago no mês (pela data do pagamento). */
+  paidCents: number;
+}
+
+/**
+ * Fluxo de caixa realizado dos `count` meses que terminam em `lastMonth` (mais antigo primeiro).
+ * Conta o que foi efetivamente pago, no mês do pagamento; canceladas ficam de fora.
+ */
+export function cashFlowByMonth(
+  receivables: Receivable[],
+  payables: Payable[],
+  lastMonth: string,
+  count = 6,
+): CashFlowMonth[] {
+  const months = Array.from({ length: count }, (_, i) => addMonths(lastMonth, i - count + 1));
+  const rows = new Map(months.map((m) => [m, { month: m, receivedCents: 0, paidCents: 0 }]));
+  for (const r of receivables) {
+    const row = !r.canceled && r.paidAt ? rows.get(monthOf(r.paidAt)) : undefined;
+    if (row) row.receivedCents += r.paidAmountCents ?? r.amountCents;
+  }
+  for (const p of payables) {
+    const row = !p.canceled && p.paidAt ? rows.get(monthOf(p.paidAt)) : undefined;
+    if (row) row.paidCents += p.paidAmountCents ?? p.amountCents;
+  }
+  return months.map((m) => rows.get(m)!);
 }
 
 /**

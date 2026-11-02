@@ -22,7 +22,8 @@ import {
 
 type Detail = "receivable" | "payable" | null;
 
-export function SummaryCards() {
+/** `stacked`: um card embaixo do outro (coluna ao lado do gráfico na tela de início). */
+export function SummaryCards({ stacked = false }: { stacked?: boolean }) {
   const { receivables, payables, clients, today, currentUser } = useAppStore();
   const showReceivable = can(currentUser.role, "receivable:read");
   const showPayable = can(currentUser.role, "payable:read");
@@ -42,7 +43,7 @@ export function SummaryCards() {
 
   return (
     <section aria-label="Resumo financeiro">
-      <div className="mb-3 flex items-center justify-end gap-1 text-sm">
+      <div className={cn("mb-3 flex flex-wrap items-center gap-1 text-sm", stacked ? "justify-start" : "justify-end")}>
         <span className="mr-1 text-slate-500">Período dos recebimentos:</span>
         <Button variant="outline" size="icon" aria-label="Mês anterior" onClick={() => setMonth(addMonths(month, -1))} className="h-8 w-8">
           <ChevronLeft className="h-4 w-4" />
@@ -53,7 +54,7 @@ export function SummaryCards() {
         </Button>
       </div>
 
-      <div className={cn("grid gap-5", showReceivable && showPayable && "md:grid-cols-2")}>
+      <div className={cn("grid gap-5", showReceivable && showPayable && (stacked ? "md:grid-cols-2 xl:grid-cols-1" : "md:grid-cols-2"))}>
         {/* Contas a receber */}
         {showReceivable && (
         <div className="relative rounded-xl border border-success-line bg-success-soft p-5 shadow-card">
