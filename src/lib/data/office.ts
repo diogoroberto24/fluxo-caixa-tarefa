@@ -58,3 +58,21 @@ export async function saveOffice(v: OfficeFormValues): Promise<{ error?: { code?
   });
   return error ? { error } : {};
 }
+
+/** Preferências do escritório que todos os usuários dele precisam ler (tabela offices, liberada pelo RLS). */
+export interface OfficePreferences {
+  /** Separar contas a pagar em Empresa / Pessoal. */
+  splitPayables: boolean;
+}
+
+export async function getOfficePreferences(): Promise<OfficePreferences> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("offices").select("split_payables").maybeSingle();
+  return { splitPayables: (data as { split_payables?: boolean } | null)?.split_payables === true };
+}
+
+export async function saveSplitPayables(enabled: boolean): Promise<{ error?: { code?: string; message: string } }> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_split_payables", { p_enabled: enabled });
+  return error ? { error } : {};
+}

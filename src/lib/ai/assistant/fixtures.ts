@@ -74,6 +74,7 @@ function payable(id: string, description: string, dueDate: string, amountCents: 
     issueDate: "2026-10-01",
     dueDate,
     recurrence: "MENSAL",
+    scope: "EMPRESA",
     canceled: false,
     history: [],
     isDemo: true,

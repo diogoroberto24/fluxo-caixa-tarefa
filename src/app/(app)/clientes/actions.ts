@@ -12,6 +12,7 @@ import {
   updateClientById,
   type FeeHistoryEntry,
 } from "@/lib/data/clients";
+import { rpc } from "@/lib/data/finance";
 import { can } from "@/lib/permissions";
 import { friendlyDbError } from "@/lib/action-result";
 import { clientCreateSchema, clientSchema, type ClientFormValues } from "@/lib/schemas";
@@ -73,6 +74,10 @@ export async function saveClientAction(
     }
     return { ok: false, error: error ? friendlyDbError(error) : UNEXPECTED };
   }
+
+  // Cliente fixo: já cria a cobrança de honorários do mês (sem duplicar). Se o perfil não puder lançar
+  // cobranças, a rotina diária do financeiro cria na madrugada seguinte.
+  if (data.kind === "FIXO" && data.active) await rpc("generate_monthly_fees", {});
 
   revalidatePath("/", "layout");
   return { ok: true, data };

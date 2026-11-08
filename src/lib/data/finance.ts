@@ -1,6 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import type { FinancialCategory, Payable, Receivable } from "@/types/domain";
+import type { FinancialCategory, Payable, PayableScope, Receivable } from "@/types/domain";
 import { centsToFee } from "./client-mapper";
 import {
   PAYABLE_SELECT,
@@ -157,6 +157,8 @@ export interface PayableChanges {
   issueDate: string;
   dueDate: string;
   notes?: string;
+  /** Só é gravado quando informado (separação Empresa/Pessoal ligada). */
+  scope?: PayableScope;
 }
 
 export async function updatePayableById(
@@ -174,6 +176,7 @@ export async function updatePayableById(
       issue_date: c.issueDate,
       due_date: c.dueDate,
       notes: c.notes ?? null,
+      ...(c.scope ? { scope: c.scope } : {}),
     })
     .eq("id", id)
     .select("id")
@@ -181,4 +184,22 @@ export async function updatePayableById(
   if (error) return { error };
   if (!data) return { error: { message: "Conta não encontrada ou sem permissão.", code: "P0002" } };
   return { ok: true };
+}
+
+/**
+ * Despesa recorrente: aplica o tipo (Empresa/Pessoal) às ocorrências seguintes da mesma série,
+ * para não precisar editar mês a mês. As próximas que forem geradas copiam o tipo da última.
+ */
+export async function applyScopeToLaterOccurrences(id: string, scope: PayableScope): Promise<void> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("payables").select("recurrence_rule_id, due_date").eq("id", id).maybeSingle();
+  const row = data as { recurrence_rule_id: string | null; due_date: string } | null;
+  if (!row?.recurrence_rule_id) return;
+  await supabase
+    .from("payables")
+    .update({ scope })
+    .eq("recurrence_rule_id", row.recurrence_rule_id)
+    .gt("due_date", row.due_date)
+    .is("canceled_at", null)
+    .neq("scope", scope);
 }

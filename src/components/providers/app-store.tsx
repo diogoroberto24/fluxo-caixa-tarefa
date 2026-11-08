@@ -22,8 +22,6 @@ import {
   cancelReceivableAction,
   createPayableAction,
   createReceivableAction,
-  generateFeesAction,
-  generateOccurrencesAction,
   payPayableAction,
   payReceivableAction,
   updatePayableAction,
@@ -127,6 +125,8 @@ interface AppStore extends State {
   categories: FinancialCategory[];
   today: string;
   currentUser: User;
+  /** Escritório separa as contas a pagar em Empresa / Pessoal. */
+  splitPayables: boolean;
   toasts: Toast[];
   notify: (message: string, tone?: Toast["tone"]) => void;
   // clientes
@@ -137,7 +137,6 @@ interface AppStore extends State {
   createReceivable: (values: ReceivableFormValues) => Result<Receivable, keyof ReceivableFormValues>;
   payReceivable: (id: string, opts?: PaymentOpts) => Result<{ receivable: Receivable; alreadyPaid: boolean }>;
   cancelReceivable: (id: string, reason: string) => Result<Receivable>;
-  generateFees: (competence: string | null) => Result<{ created: number }>;
   // serviço avulso (cliente eventual)
   addService: (clientId: string, values: ServiceFormValues) => Result<{ created: number }, keyof ServiceFormValues>;
   updateService: (groupId: string, values: ServiceFormValues) => Result<{ created: number }, keyof ServiceFormValues>;
@@ -146,7 +145,6 @@ interface AppStore extends State {
   updatePayable: (id: string, values: PayableFormValues) => Result<Payable, keyof PayableFormValues>;
   payPayable: (id: string, opts?: PaymentOpts) => Result<{ payable: Payable; alreadyPaid: boolean }>;
   cancelPayable: (id: string, reason: string) => Result<Payable>;
-  generateOccurrences: () => Result<{ created: number }>;
   // tarefas e cadastro (catálogo) de tarefas
   saveTaskType: (id: string | null, values: TaskTypeFormValues) => Result<TaskType, keyof TaskTypeFormValues>;
   createTasks: (values: TasksBatchValues) => Result<Task[], "clientId" | "items" | "assigneeId" | "notes">;
@@ -170,6 +168,7 @@ export function AppStoreProvider({
   initialPayables,
   initialTasks,
   initialTaskTypes,
+  splitPayables = false,
   children,
 }: {
   today: string;
@@ -181,6 +180,7 @@ export function AppStoreProvider({
   initialPayables: Payable[];
   initialTasks: Task[];
   initialTaskTypes: TaskType[];
+  splitPayables?: boolean;
   children: ReactNode;
 }) {
   const [data, dispatch] = useReducer(
@@ -216,6 +216,7 @@ export function AppStoreProvider({
       categories,
       today,
       currentUser,
+      splitPayables,
       toasts,
       notify,
       saveClient: async (id, values) => {
@@ -245,7 +246,6 @@ export function AppStoreProvider({
         if (r.ok) dispatch({ type: "upsertReceivable", receivable: r.data });
         return r;
       },
-      generateFees: (competence) => generateFeesAction(competence),
       addService: (clientId, values) => addServiceAction(clientId, values),
       updateService: (groupId, values) => updateServiceAction(groupId, values),
 
@@ -269,7 +269,6 @@ export function AppStoreProvider({
         if (r.ok) dispatch({ type: "upsertPayable", payable: r.data });
         return r;
       },
-      generateOccurrences: () => generateOccurrencesAction(),
 
       saveTaskType: async (id, values) => {
         const r = await saveTaskTypeAction(id, values);
@@ -292,7 +291,7 @@ export function AppStoreProvider({
         return r;
       },
     };
-  }, [data, users, categories, today, currentUser, toasts, notify]);
+  }, [data, users, categories, today, currentUser, splitPayables, toasts, notify]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

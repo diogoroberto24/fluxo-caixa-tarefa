@@ -1,5 +1,6 @@
 import { AccessRestricted } from "@/components/layout/coming-soon";
 import { OfficeForm } from "@/components/settings/office-form";
+import { PreferencesCard } from "@/components/settings/preferences-card";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getOffice } from "@/lib/data/office";
 import { can } from "@/lib/permissions";
@@ -17,6 +18,7 @@ export default async function SettingsPage() {
         <p className="text-sm text-slate-500">Dados do escritório e preferências do sistema.</p>
       </div>
       <OfficeForm initial={office} />
+      <PreferencesCard />
     </div>
   );
 }

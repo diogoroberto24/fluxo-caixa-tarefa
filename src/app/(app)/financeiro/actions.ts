@@ -6,6 +6,7 @@ import { UNEXPECTED_ERROR, friendlyDbError, type ActionResult } from "@/lib/acti
 import { getCurrentUser } from "@/lib/auth/session";
 import { centsToFee } from "@/lib/data/client-mapper";
 import {
+  applyScopeToLaterOccurrences,
   getInstallment,
   getPayable,
   getReceivable,
@@ -13,6 +14,7 @@ import {
   rpc,
   updatePayableById,
 } from "@/lib/data/finance";
+import { getOfficePreferences } from "@/lib/data/office";
 import { competenceLabel } from "@/lib/format";
 import { parseMoneyToCents } from "@/lib/money";
 import { can, type Permission } from "@/lib/permissions";
@@ -24,7 +26,7 @@ import {
   type ReceivableFormValues,
   type ServiceFormValues,
 } from "@/lib/schemas";
-import type { Payable, Receivable } from "@/types/domain";
+import type { Payable, PayableScope, Receivable } from "@/types/domain";
 
 async function authorize(permission: Permission): Promise<string | null> {
   const user = await getCurrentUser();
@@ -138,23 +140,6 @@ export async function cancelReceivableAction(
   return receivable ? { ok: true, data: receivable } : { ok: false, error: UNEXPECTED_ERROR };
 }
 
-/** Gera os honorários da competência (YYYY-MM) para os clientes ativos. Idempotente. */
-export async function generateFeesAction(
-  competence: string | null,
-): Promise<ActionResult<{ created: number }>> {
-  const denied = await authorize("receivable:write");
-  if (denied) return { ok: false, error: denied };
-  if (competence !== null && !/^\d{4}-\d{2}$/.test(competence)) {
-    return { ok: false, error: "Competência inválida." };
-  }
-  const { data, error } = await rpc<number>("generate_monthly_fees", {
-    p_competence: competence ? `${competence}-01` : null,
-  });
-  if (error) return { ok: false, error: friendlyDbError(error) };
-  if ((data ?? 0) > 0) refresh();
-  return { ok: true, data: { created: data ?? 0 } };
-}
-
 // ============================================================== serviço avulso
 
 /** Lança um novo serviço avulso (à vista ou parcelado) para um cliente que já existe. */
@@ -211,6 +196,18 @@ export async function updateServiceAction(
 
 // =============================================================== contas a pagar
 
+const SCOPE_REQUIRED = "Informe se a conta é da empresa ou pessoal.";
+
+/**
+ * Tipo da conta (Empresa/Pessoal). Com a separação ligada a escolha é obrigatória;
+ * desligada, o que vier do navegador é ignorado (`undefined` = não mexe no que está gravado).
+ */
+async function resolveScope(scope: PayableFormValues["scope"]): Promise<{ scope?: PayableScope; error?: string }> {
+  const { splitPayables } = await getOfficePreferences();
+  if (!splitPayables) return {};
+  return scope ? { scope } : { error: SCOPE_REQUIRED };
+}
+
 export async function createPayableAction(
   values: PayableFormValues,
 ): Promise<ActionResult<{ id: string; payable: Payable | null }, keyof PayableFormValues>> {
@@ -223,6 +220,8 @@ export async function createPayableAction(
     return { ok: false, error: i.message, field: i.path[0] as keyof PayableFormValues };
   }
   const v = parsed.data;
+  const scope = await resolveScope(v.scope);
+  if (scope.error) return { ok: false, error: scope.error, field: "scope" };
   const { data, error } = await rpc<string>("create_payable", {
     p_description: v.description,
     p_category_id: v.categoryId,
@@ -232,6 +231,8 @@ export async function createPayableAction(
     p_due_date: v.dueDate,
     p_notes: v.notes || null,
     p_frequency: v.recurrence === "NONE" ? null : v.recurrence,
+    // só envia quando a separação está ligada: assim o app funciona mesmo antes da migração
+    ...(scope.scope ? { p_scope: scope.scope } : {}),
   });
   if (error || !data) return { ok: false, error: error ? friendlyDbError(error) : UNEXPECTED_ERROR };
   const payable = await getPayable(data);
@@ -253,6 +254,8 @@ export async function updatePayableAction(
     return { ok: false, error: i.message, field: i.path[0] as keyof PayableFormValues };
   }
   const v = parsed.data;
+  const scope = await resolveScope(v.scope);
+  if (scope.error) return { ok: false, error: scope.error, field: "scope" };
   const { error } = await updatePayableById(id, {
     description: v.description,
     categoryId: v.categoryId,
@@ -261,8 +264,10 @@ export async function updatePayableAction(
     issueDate: v.issueDate,
     dueDate: v.dueDate,
     notes: v.notes || undefined,
+    scope: scope.scope,
   });
   if (error) return { ok: false, error: friendlyDbError(error) };
+  if (scope.scope) await applyScopeToLaterOccurrences(id, scope.scope);
   const payable = await getPayable(id);
   refresh();
   return payable ? { ok: true, data: payable } : { ok: false, error: UNEXPECTED_ERROR };
@@ -306,14 +311,4 @@ export async function cancelPayableAction(
   const payable = await getPayable(id);
   refresh();
   return payable ? { ok: true, data: payable } : { ok: false, error: UNEXPECTED_ERROR };
-}
-
-/** Gera as ocorrências futuras das despesas recorrentes. Idempotente. */
-export async function generateOccurrencesAction(): Promise<ActionResult<{ created: number }>> {
-  const denied = await authorize("payable:write");
-  if (denied) return { ok: false, error: denied };
-  const { data, error } = await rpc<number>("generate_payable_occurrences", {});
-  if (error) return { ok: false, error: friendlyDbError(error) };
-  if ((data ?? 0) > 0) refresh();
-  return { ok: true, data: { created: data ?? 0 } };
 }

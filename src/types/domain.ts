@@ -73,6 +73,9 @@ export interface Client {
 export type ReceivableCategory = "HONORARIOS" | "OUTROS";
 export type Recurrence = "NONE" | "MENSAL" | "SEMESTRAL" | "ANUAL";
 
+/** Conta da empresa ou pessoal (só aparece quando o escritório liga a separação). */
+export type PayableScope = "EMPRESA" | "PESSOAL";
+
 export interface HistoryEntry {
   at: string;
   text: string;
@@ -119,6 +122,7 @@ export interface Payable {
   paidAmountCents?: number;
   /** Vem da regra de recorrência (NONE = avulsa). */
   recurrence: Recurrence;
+  scope: PayableScope;
   notes?: string;
   canceled: boolean;
   history: HistoryEntry[];

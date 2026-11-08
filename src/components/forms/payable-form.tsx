@@ -20,7 +20,7 @@ export function PayableForm({
   payable?: Payable;
   onDone: () => void;
 }) {
-  const { categories, createPayable, updatePayable, notify, today } = useAppStore();
+  const { categories, createPayable, updatePayable, notify, today, splitPayables } = useAppStore();
   const editing = !!payable;
   const {
     register,
@@ -38,6 +38,7 @@ export function PayableForm({
           issueDate: payable.issueDate,
           dueDate: payable.dueDate,
           recurrence: payable.recurrence,
+          scope: splitPayables ? payable.scope : "",
           notes: payable.notes ?? "",
         }
       : {
@@ -45,6 +46,8 @@ export function PayableForm({
           issueDate: today,
           dueDate: today,
           recurrence: "NONE",
+          // conta nova: o tipo começa vazio e precisa ser escolhido
+          scope: "",
         },
   });
 
@@ -77,6 +80,20 @@ export function PayableForm({
       <Field label="Descrição *" error={errors.description?.message} className="sm:col-span-2">
         <Input {...register("description")} />
       </Field>
+      {splitPayables && (
+        <Field
+          label="Tipo da conta *"
+          error={errors.scope?.message}
+          hint={editing && payable.recurrence !== "NONE" ? "Vale também para as próximas ocorrências desta despesa." : undefined}
+          className="sm:col-span-2"
+        >
+          <Select {...register("scope")}>
+            <option value="">Selecione…</option>
+            <option value="EMPRESA">Empresa</option>
+            <option value="PESSOAL">Pessoal</option>
+          </Select>
+        </Field>
+      )}
       <Field label="Categoria *" error={errors.categoryId?.message}>
         <Select {...register("categoryId")}>
           <option value="">Selecione…</option>

@@ -4,6 +4,7 @@ import { AppStoreProvider } from "@/components/providers/app-store";
 import { getCurrentUser, listActiveUsers } from "@/lib/auth/session";
 import { isAiConfigured } from "@/lib/ai/model";
 import { listClients } from "@/lib/data/clients";
+import { getOfficePreferences } from "@/lib/data/office";
 import { listPayableCategories, listPayables, listReceivables } from "@/lib/data/finance";
 import { listTasks, listTaskTypes } from "@/lib/data/tasks";
 import { todayInSaoPaulo } from "@/lib/dates";
@@ -19,7 +20,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const today = todayInSaoPaulo();
   // O RLS já esconde o que o perfil não pode ver; evitamos até a consulta.
-  const [clients, users, receivables, payables, categories, tasks, taskTypes] = await Promise.all([
+  const [clients, users, receivables, payables, categories, tasks, taskTypes, prefs] = await Promise.all([
     listClients(),
     listActiveUsers(),
     can(user.role, "receivable:read") ? listReceivables(today) : Promise.resolve([]),
@@ -27,6 +28,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     can(user.role, "payable:read") ? listPayableCategories() : Promise.resolve([]),
     listTasks(today),
     listTaskTypes(),
+    getOfficePreferences(),
   ]);
 
   return (
@@ -40,6 +42,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       initialPayables={payables}
       initialTasks={tasks}
       initialTaskTypes={taskTypes}
+      splitPayables={prefs.splitPayables}
     >
       <AppShell aiEnabled={isAiConfigured()}>{children}</AppShell>
     </AppStoreProvider>

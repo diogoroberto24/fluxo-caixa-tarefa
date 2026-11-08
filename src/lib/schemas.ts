@@ -158,6 +158,8 @@ export const payableSchema = z.object({
   issueDate: isoDate("Informe a data de lançamento."),
   dueDate: isoDate("Informe o vencimento."),
   recurrence: z.enum(recurrenceValues),
+  /** Empresa/Pessoal: vazio quando a separação está desligada (o servidor decide o que gravar). */
+  scope: z.enum(["", "EMPRESA", "PESSOAL"]),
   notes: optional,
 });
 export type PayableFormValues = z.infer<typeof payableSchema>;

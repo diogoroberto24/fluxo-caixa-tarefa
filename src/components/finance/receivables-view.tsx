@@ -7,10 +7,8 @@ import {
   FileX2,
   HandCoins,
   History,
-  Loader2,
   Pencil,
   Plus,
-  RefreshCw,
   Search,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -37,7 +35,7 @@ const CATEGORY_LABEL = { HONORARIOS: "Honorários", OUTROS: "Outros" } as const;
 export function ReceivablesView() {
   const {
     receivables, clients, today, currentUser, notify,
-    payReceivable, cancelReceivable, generateFees,
+    payReceivable, cancelReceivable,
   } = useAppStore();
   const canWrite = can(currentUser.role, "receivable:write");
   const canPay = can(currentUser.role, "receivable:pay");
@@ -58,7 +56,6 @@ export function ReceivablesView() {
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [generating, setGenerating] = useState(false);
 
   const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
 
@@ -106,19 +103,6 @@ export function ReceivablesView() {
   );
   const nameOf = (id: string) => clientById.get(id)?.tradeName ?? "Cliente removido";
 
-  async function onGenerate() {
-    setGenerating(true);
-    const comp = competence || monthOf(today);
-    const r = await generateFees(comp);
-    setGenerating(false);
-    if (!r.ok) return notify(r.error, "error");
-    notify(
-      r.data.created > 0
-        ? `${r.data.created} cobrança(s) de honorários geradas para ${monthLabel(comp)}.`
-        : `Nenhuma cobrança nova: os honorários de ${monthLabel(comp)} já foram gerados para todos os clientes ativos.`,
-    );
-  }
-
   return (
     <div className="mx-auto flex max-w-[1280px] flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -130,12 +114,6 @@ export function ReceivablesView() {
           <Button variant="outline" onClick={() => setHistoryOpen(true)}>
             <History className="h-4 w-4" /> Histórico de recebimentos
           </Button>
-          {canWrite && (
-            <Button variant="outline" onClick={onGenerate} disabled={generating} title="Cria as cobranças de honorários da competência filtrada para os clientes ativos (sem duplicar)">
-              {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-              Gerar honorários
-            </Button>
-          )}
           {canPay && (
             <Button variant="success" onClick={() => { setPickId(""); setPickOpen(true); }}>
               <CheckCircle2 className="h-4 w-4" /> Registrar pagamento
@@ -203,8 +181,8 @@ export function ReceivablesView() {
           <EmptyState
             icon={HandCoins}
             title="Nenhuma cobrança encontrada para este período"
-            description={receivables.length === 0 ? "Gere os honorários da competência ou lance uma nova cobrança." : "Ajuste os filtros para ver outras cobranças."}
-            action={canWrite && receivables.length === 0 ? <Button size="sm" onClick={onGenerate} disabled={generating}>Gerar honorários</Button> : undefined}
+            description={receivables.length === 0 ? "Os honorários dos clientes fixos são gerados automaticamente todo mês. Você também pode lançar uma nova cobrança." : "Ajuste os filtros para ver outras cobranças."}
+            action={canWrite && receivables.length === 0 ? <Button size="sm" onClick={() => setNewOpen(true)}>Nova cobrança</Button> : undefined}
           />
         ) : (
           <div className="px-5 pb-4 pt-3">

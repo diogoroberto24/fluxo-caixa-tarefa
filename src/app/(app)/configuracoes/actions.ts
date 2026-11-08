@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { UNEXPECTED_ERROR, friendlyDbError, type ActionResult } from "@/lib/action-result";
 import { getCurrentUser } from "@/lib/auth/session";
-import { saveOffice } from "@/lib/data/office";
+import { saveOffice, saveSplitPayables } from "@/lib/data/office";
 import { can } from "@/lib/permissions";
 import { officeSchema, type OfficeFormValues } from "@/lib/schemas";
 
@@ -18,6 +18,17 @@ export async function saveOfficeAction(values: OfficeFormValues): Promise<Action
     return { ok: false, error: i.message, field: i.path[0] as keyof OfficeFormValues };
   }
   const { error } = await saveOffice(parsed.data);
+  if (error) return { ok: false, error: friendlyDbError(error) || UNEXPECTED_ERROR };
+  revalidatePath("/", "layout");
+  return { ok: true, data: true };
+}
+
+/** Liga/desliga a separação Empresa/Pessoal nas contas a pagar (só o administrador). */
+export async function setSplitPayablesAction(enabled: boolean): Promise<ActionResult<true>> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "Sessão expirada. Entre novamente." };
+  if (!can(user.role, "settings:manage")) return { ok: false, error: "Somente o administrador pode alterar esta configuração." };
+  const { error } = await saveSplitPayables(enabled === true);
   if (error) return { ok: false, error: friendlyDbError(error) || UNEXPECTED_ERROR };
   revalidatePath("/", "layout");
   return { ok: true, data: true };

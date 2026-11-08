@@ -1,7 +1,7 @@
 "use client";
 
-import { Ban, CheckCircle2, Eye, Pencil, Plus, Receipt, RefreshCw, Repeat, Search } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Ban, CheckCircle2, Eye, Pencil, Plus, Receipt, Repeat, Search } from "lucide-react";
+import { useMemo, useState } from "react";
 import { PayableForm } from "@/components/forms/payable-form";
 import { useAppStore } from "@/components/providers/app-store";
 import { Badge, ChargeBadge } from "@/components/ui/badge";
@@ -10,54 +10,61 @@ import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Field, Input, Select } from "@/components/ui/fields";
-import { addDays } from "@/lib/dates";
-import { formatBRL, formatDate } from "@/lib/format";
+import { addDays, addMonths, monthOf } from "@/lib/dates";
+import { formatBRL, formatDate, monthLabel } from "@/lib/format";
 import { can } from "@/lib/permissions";
 import { cn, normalize } from "@/lib/utils";
 import { chargeStatus, DUE_SOON_DAYS, isOpen } from "@/services/finance";
-import type { ChargeStatus, Payable } from "@/types/domain";
+import type { ChargeStatus, Payable, PayableScope } from "@/types/domain";
 import { CancelDialog, HistoryList, PayDialog, StatCard } from "./shared";
 
-const COLS = "md:grid-cols-[1.6fr_0.9fr_1.2fr_0.9fr_0.9fr_0.9fr_0.8fr_0.8fr_120px]";
+const COLS = "md:grid-cols-[2fr_0.9fr_1.1fr_0.9fr_0.9fr_0.9fr_0.8fr_0.8fr_120px]";
 const RECURRENCE_LABEL = { NONE: "Avulsa", MENSAL: "Mensal", SEMESTRAL: "Semestral", ANUAL: "Anual" } as const;
+const SCOPE_LABEL: Record<PayableScope, string> = { EMPRESA: "Empresa", PESSOAL: "Pessoal" };
+
+function ScopeBadge({ scope }: { scope: PayableScope }) {
+  return scope === "PESSOAL"
+    ? <Badge className="bg-violet-50 text-violet-700">Pessoal</Badge>
+    : <Badge tone="info">Empresa</Badge>;
+}
 
 export function PayablesView() {
   const {
     payables, categories, today, currentUser, notify,
-    payPayable, cancelPayable, generateOccurrences,
+    payPayable, cancelPayable, splitPayables,
   } = useAppStore();
   const canWrite = can(currentUser.role, "payable:write");
 
-  const [dueFrom, setDueFrom] = useState("");
-  const [dueTo, setDueTo] = useState("");
+  // Abre no mês atual (as recorrentes dos próximos meses não entram nos totais); as datas podem ser trocadas.
+  const month = monthOf(today);
+  const monthStart = `${month}-01`;
+  const monthEnd = addDays(`${addMonths(month, 1)}-01`, -1);
+  const [dueFrom, setDueFrom] = useState(monthStart);
+  const [dueTo, setDueTo] = useState(monthEnd);
+  // No período padrão também aparecem as vencidas e não pagas de meses anteriores, para nada atrasado sumir.
+  const defaultPeriod = dueFrom === monthStart && dueTo === monthEnd;
   const [categoryId, setCategoryId] = useState("");
   const [supplier, setSupplier] = useState("");
   const [status, setStatus] = useState<"" | ChargeStatus>("");
+  // Empresa / Pessoal: só vale com a separação ligada; sempre começa em "Todos".
+  const [scope, setScope] = useState<"" | PayableScope>("");
+  const scopeFilter = splitPayables ? scope : "";
 
   const [form, setForm] = useState<{ payable?: Payable } | null>(null);
   const [payId, setPayId] = useState<string | null>(null);
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
 
-  // Gera as próximas ocorrências das despesas recorrentes (idempotente) ao abrir a página.
-  const generated = useRef(false);
-  useEffect(() => {
-    if (generated.current || !canWrite) return;
-    generated.current = true;
-    generateOccurrences().then((r) => {
-      if (r.ok && r.data.created > 0) notify(`${r.data.created} ocorrência(s) de despesas recorrentes geradas.`);
-    });
-  }, [canWrite, generateOccurrences, notify]);
-
   const rows = useMemo(() => {
     const s = normalize(supplier);
     return payables
       .map((p) => ({ p, st: chargeStatus(p, today) }))
       .filter(({ p, st }) => {
-        if (dueFrom && p.dueDate < dueFrom) return false;
+        if (dueFrom && p.dueDate < dueFrom && !(defaultPeriod && st === "VENCIDO")) return false;
         if (dueTo && p.dueDate > dueTo) return false;
         if (categoryId && p.categoryId !== categoryId) return false;
         if (status && st !== status) return false;
+        if (scopeFilter && p.scope !== scopeFilter) return false;
         if (s && !normalize(`${p.supplier} ${p.description}`).includes(s)) return false;
         return true;
       })
@@ -67,7 +74,7 @@ export function PayablesView() {
         if (ao !== bo) return ao - bo;
         return ao === 0 ? a.p.dueDate.localeCompare(b.p.dueDate) : b.p.dueDate.localeCompare(a.p.dueDate);
       });
-  }, [payables, today, dueFrom, dueTo, categoryId, status, supplier]);
+  }, [payables, today, dueFrom, dueTo, defaultPeriod, categoryId, status, scopeFilter, supplier]);
 
   const kpi = useMemo(() => {
     const k = { open: 0, openCount: 0, overdue: 0, overdueCount: 0, soon: 0, soonCount: 0, paid: 0 };
@@ -87,12 +94,6 @@ export function PayablesView() {
   const cancelTarget = payables.find((p) => p.id === cancelId) ?? null;
   const detail = payables.find((p) => p.id === detailId) ?? null;
 
-  async function onGenerate() {
-    const r = await generateOccurrences();
-    if (!r.ok) return notify(r.error, "error");
-    notify(r.data.created > 0 ? `${r.data.created} ocorrência(s) geradas.` : "Nenhuma ocorrência nova: as despesas recorrentes já estão em dia.");
-  }
-
   return (
     <div className="mx-auto flex max-w-[1280px] flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -101,14 +102,9 @@ export function PayablesView() {
           <p className="text-sm text-slate-500">Despesas do escritório, avulsas e recorrentes.</p>
         </div>
         {canWrite && (
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={onGenerate} title="Gera as próximas ocorrências das despesas recorrentes (sem duplicar)">
-              <RefreshCw className="h-4 w-4" /> Gerar recorrências
-            </Button>
-            <Button onClick={() => setForm({})}>
-              <Plus className="h-4 w-4" /> Nova conta
-            </Button>
-          </div>
+          <Button onClick={() => setForm({})}>
+            <Plus className="h-4 w-4" /> Nova conta
+          </Button>
         )}
       </div>
 
@@ -120,7 +116,7 @@ export function PayablesView() {
       </div>
 
       <Card>
-        <div className="grid gap-3 border-b border-line px-5 py-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className={cn("grid gap-3 border-b border-line px-5 py-4 sm:grid-cols-2", splitPayables ? "lg:grid-cols-6" : "lg:grid-cols-5")}>
           <Field label="Vencimento de"><Input type="date" value={dueFrom} onChange={(e) => setDueFrom(e.target.value)} /></Field>
           <Field label="Vencimento até"><Input type="date" value={dueTo} onChange={(e) => setDueTo(e.target.value)} /></Field>
           <Field label="Categoria">
@@ -138,12 +134,35 @@ export function PayablesView() {
               <option value="CANCELADO">Cancelado</option>
             </Select>
           </Field>
+          {splitPayables && (
+            <Field label="Tipo">
+              <Select value={scope} onChange={(e) => setScope(e.target.value as "" | PayableScope)}>
+                <option value="">Todos</option>
+                <option value="EMPRESA">Empresa</option>
+                <option value="PESSOAL">Pessoal</option>
+              </Select>
+            </Field>
+          )}
           <Field label="Fornecedor / descrição">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
               <Input className="pl-9" placeholder="Pesquisar" value={supplier} onChange={(e) => setSupplier(e.target.value)} />
             </div>
           </Field>
+        </div>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line px-5 py-2 text-xs text-slate-500">
+          <span>
+            {defaultPeriod
+              ? `Mostrando as contas de ${monthLabel(month)} e as vencidas de meses anteriores ainda não pagas.`
+              : dueFrom || dueTo
+                ? `Mostrando as contas com vencimento ${dueFrom ? `de ${formatDate(dueFrom)} ` : ""}${dueTo ? `até ${formatDate(dueTo)}` : "em diante"}.`
+                : "Mostrando todas as contas."}
+          </span>
+          {!defaultPeriod && (
+            <button type="button" className="font-semibold text-primary hover:underline" onClick={() => { setDueFrom(monthStart); setDueTo(monthEnd); }}>
+              Voltar para o mês atual
+            </button>
+          )}
         </div>
 
         {rows.length === 0 ? (
@@ -161,7 +180,10 @@ export function PayablesView() {
             <ul>
               {rows.map(({ p, st }) => (
                 <li key={p.id} className={cn("grid gap-x-3 gap-y-1 border-b border-line px-3 py-3 text-[13px] last:border-0 md:items-center", COLS, st === "VENCIDO" && "bg-danger-soft/40")}>
-                  <div className="min-w-0 truncate font-semibold text-navy">{p.description}</div>
+                  <div className="min-w-0">
+                    <div className="line-clamp-2 break-words font-semibold text-navy" title={p.description}>{p.description}</div>
+                    {splitPayables && <div className="mt-1"><ScopeBadge scope={p.scope} /></div>}
+                  </div>
                   <div><Badge tone="neutral">{p.category}</Badge></div>
                   <div className="truncate text-slate-700">{p.supplier}</div>
                   <div className="font-semibold md:text-right">{formatBRL(p.amountCents)}</div>
@@ -200,7 +222,7 @@ export function PayablesView() {
         )}
       </Card>
 
-      <Dialog open={form !== null} onOpenChange={(o) => !o && setForm(null)} title={form?.payable ? "Editar conta" : "Nova conta a pagar"} description="Despesas recorrentes geram as próximas ocorrências automaticamente.">
+      <Dialog open={form !== null} onOpenChange={(o) => !o && setForm(null)} title={form?.payable ? "Editar conta" : "Nova conta a pagar"} description="Despesas recorrentes geram as próximas ocorrências automaticamente, todos os dias.">
         {form && <PayableForm payable={form.payable} onDone={() => setForm(null)} />}
       </Dialog>
 
@@ -247,6 +269,7 @@ export function PayablesView() {
           <div className="space-y-4">
             <ChargeBadge status={chargeStatus(detail, today)} />
             <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+              {splitPayables && <div><dt className="text-xs text-slate-500">Tipo</dt><dd>{SCOPE_LABEL[detail.scope]}</dd></div>}
               <div><dt className="text-xs text-slate-500">Categoria</dt><dd>{detail.category}</dd></div>
               <div><dt className="text-xs text-slate-500">Recorrência</dt><dd>{RECURRENCE_LABEL[detail.recurrence]}</dd></div>
               <div><dt className="text-xs text-slate-500">Valor</dt><dd className="font-semibold">{formatBRL(detail.amountCents)}</dd></div>

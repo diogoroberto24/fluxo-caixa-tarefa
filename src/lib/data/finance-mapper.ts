@@ -4,6 +4,7 @@ import type {
   FinancialCategory,
   HistoryEntry,
   Payable,
+  PayableScope,
   Receivable,
   ReceivableCategory,
   Recurrence,
@@ -22,7 +23,7 @@ export const RECEIVABLE_SELECT =
   "id, client_id, description, category, competence, amount, due_date, notes, installment_group_id, installment_number, installment_total, canceled_at, cancel_reason, is_demo, created_at, payments(paid_on, amount)";
 
 export const PAYABLE_SELECT =
-  "id, description, category_id, supplier, amount, issue_date, due_date, notes, canceled_at, cancel_reason, is_demo, created_at, financial_categories(name), recurrence_rules(frequency), payments(paid_on, amount)";
+  "id, description, category_id, supplier, amount, issue_date, due_date, notes, scope, canceled_at, cancel_reason, is_demo, created_at, financial_categories(name), recurrence_rules(frequency), payments(paid_on, amount)";
 
 export interface ReceivableRow {
   id: string;
@@ -52,6 +53,7 @@ export interface PayableRow {
   issue_date: string;
   due_date: string;
   notes: string | null;
+  scope: PayableScope;
   canceled_at: string | null;
   cancel_reason: string | null;
   is_demo: boolean;
@@ -118,6 +120,7 @@ export function rowToPayable(r: PayableRow): Payable {
     paidAt: payment?.paid_on,
     paidAmountCents: payment ? feeToCents(payment.amount) : undefined,
     recurrence: (firstOf(r.recurrence_rules)?.frequency ?? "NONE") as Recurrence,
+    scope: r.scope ?? "EMPRESA",
     notes: r.notes ?? undefined,
     canceled: r.canceled_at !== null,
     history: buildHistory(r, payment, {
