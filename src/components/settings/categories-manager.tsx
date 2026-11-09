@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Plus, X } from "lucide-react";
+import { Check, Loader2, Plus, X } from "lucide-react";
 import { useEffect, useMemo, useState, type DragEvent, type FormEvent } from "react";
 import { createCategoryAction, updateCategoryAction } from "@/app/(app)/configuracoes/actions";
 import { useAppStore } from "@/components/providers/app-store";
@@ -14,8 +14,8 @@ type Changes = Partial<Pick<FinancialCategory, "name" | "active" | "forEmpresa" 
 type DragSource = "LIST" | PayableScope;
 
 const SCOPE = {
-  EMPRESA: { label: "Empresa", flag: "forEmpresa", mark: "bg-primary", over: "border-primary ring-2 ring-primary/15", check: "accent-primary" },
-  PESSOAL: { label: "Pessoal", flag: "forPessoal", mark: "bg-personal", over: "border-personal ring-2 ring-personal/15", check: "accent-personal" },
+  EMPRESA: { label: "Empresa", flag: "forEmpresa", mark: "bg-primary", over: "border-primary ring-2 ring-primary/15", check: "checked:border-primary checked:bg-primary" },
+  PESSOAL: { label: "Pessoal", flag: "forPessoal", mark: "bg-personal", over: "border-personal ring-2 ring-personal/15", check: "checked:border-personal checked:bg-personal" },
 } as const satisfies Record<PayableScope, unknown>;
 
 const SCOPES: PayableScope[] = ["EMPRESA", "PESSOAL"];
@@ -226,13 +226,24 @@ export function CategoriesManager() {
                       {splitPayables &&
                         SCOPES.map((s) => (
                           <label key={s} className="flex items-center gap-2 text-xs text-slate-600 md:justify-center">
-                            <input
-                              type="checkbox"
-                              checked={c[SCOPE[s].flag]}
-                              onChange={() => toggleScope(c, s)}
-                              className={cn("h-4 w-4 cursor-pointer", SCOPE[s].check)}
-                              aria-label={`${c.name} em ${SCOPE[s].label}`}
-                            />
+                            {/* caixa desenhada pelo próprio app: a cor do tipo aparece igual em qualquer navegador */}
+                            <span className="relative inline-flex h-4 w-4 shrink-0">
+                              <input
+                                type="checkbox"
+                                checked={c[SCOPE[s].flag]}
+                                onChange={() => toggleScope(c, s)}
+                                className={cn(
+                                  "peer h-4 w-4 cursor-pointer appearance-none rounded-[4px] border border-slate-300 bg-white transition-colors duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                                  SCOPE[s].check,
+                                )}
+                                aria-label={`${c.name} em ${SCOPE[s].label}`}
+                              />
+                              <Check
+                                className="pointer-events-none absolute inset-0 m-auto hidden h-3 w-3 text-white peer-checked:block"
+                                strokeWidth={3}
+                                aria-hidden
+                              />
+                            </span>
                             <span className="md:hidden">{SCOPE[s].label}</span>
                           </label>
                         ))}
