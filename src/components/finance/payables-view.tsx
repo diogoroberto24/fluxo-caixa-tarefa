@@ -24,7 +24,7 @@ const SCOPE_LABEL: Record<PayableScope, string> = { EMPRESA: "Empresa", PESSOAL:
 
 function ScopeBadge({ scope }: { scope: PayableScope }) {
   return scope === "PESSOAL"
-    ? <Badge className="bg-violet-50 text-violet-700">Pessoal</Badge>
+    ? <Badge className="bg-personal-soft text-personal">Pessoal</Badge>
     : <Badge tone="info">Empresa</Badge>;
 }
 
@@ -49,6 +49,19 @@ export function PayablesView() {
   // Empresa / Pessoal: só vale com a separação ligada; sempre começa em "Todos".
   const [scope, setScope] = useState<"" | PayableScope>("");
   const scopeFilter = splitPayables ? scope : "";
+  // Com um tipo escolhido, o filtro de categoria mostra só as categorias ligadas a ele (como no cadastro).
+  const categoryOptions = useMemo(
+    () =>
+      categories.filter(
+        (c) => !scopeFilter || (scopeFilter === "EMPRESA" ? c.forEmpresa : c.forPessoal),
+      ),
+    [categories, scopeFilter],
+  );
+  function changeScope(next: "" | PayableScope) {
+    setScope(next);
+    const fits = (c: (typeof categories)[number]) => !next || (next === "EMPRESA" ? c.forEmpresa : c.forPessoal);
+    if (categoryId && !categories.some((c) => c.id === categoryId && fits(c))) setCategoryId("");
+  }
 
   const [form, setForm] = useState<{ payable?: Payable } | null>(null);
   const [payId, setPayId] = useState<string | null>(null);
@@ -119,10 +132,21 @@ export function PayablesView() {
         <div className={cn("grid gap-3 border-b border-line px-5 py-4 sm:grid-cols-2", splitPayables ? "lg:grid-cols-6" : "lg:grid-cols-5")}>
           <Field label="Vencimento de"><Input type="date" value={dueFrom} onChange={(e) => setDueFrom(e.target.value)} /></Field>
           <Field label="Vencimento até"><Input type="date" value={dueTo} onChange={(e) => setDueTo(e.target.value)} /></Field>
+          {splitPayables && (
+            <Field label="Tipo">
+              <Select value={scope} onChange={(e) => changeScope(e.target.value as "" | PayableScope)}>
+                <option value="">Todos</option>
+                <option value="EMPRESA">Empresa</option>
+                <option value="PESSOAL">Pessoal</option>
+              </Select>
+            </Field>
+          )}
           <Field label="Categoria">
             <Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
               <option value="">Todas</option>
-              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {categoryOptions.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}{c.active ? "" : " (desativada)"}</option>
+              ))}
             </Select>
           </Field>
           <Field label="Status">
@@ -134,15 +158,6 @@ export function PayablesView() {
               <option value="CANCELADO">Cancelado</option>
             </Select>
           </Field>
-          {splitPayables && (
-            <Field label="Tipo">
-              <Select value={scope} onChange={(e) => setScope(e.target.value as "" | PayableScope)}>
-                <option value="">Todos</option>
-                <option value="EMPRESA">Empresa</option>
-                <option value="PESSOAL">Pessoal</option>
-              </Select>
-            </Field>
-          )}
           <Field label="Fornecedor / descrição">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />

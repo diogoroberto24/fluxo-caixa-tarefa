@@ -19,6 +19,8 @@ const config: Config = {
         success: { DEFAULT: "#12875a", soft: "#e4f5ec", line: "#bfe5d0" },
         danger: { DEFAULT: "#d03a3a", soft: "#fdeceb", line: "#f6c9c8" },
         warning: { DEFAULT: "#c2740c", soft: "#fdf0dc", line: "#f6d9ae" },
+        /** Tipo de conta "Pessoal" (Empresa usa primary). */
+        personal: { DEFAULT: "#0f6e6a", soft: "#e5f2f1", line: "#b7d9d6" },
         ink: { DEFAULT: "#14264a", muted: "#64748b" },
         line: "#e3e8ef",
         surface: "#f6f8fb",

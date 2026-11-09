@@ -1,12 +1,11 @@
 "use client";
 
-import { Check, GripVertical, Loader2, Pencil, Plus, Tags, X } from "lucide-react";
+import { Loader2, Plus, X } from "lucide-react";
 import { useEffect, useMemo, useState, type DragEvent, type FormEvent } from "react";
 import { createCategoryAction, updateCategoryAction } from "@/app/(app)/configuracoes/actions";
 import { useAppStore } from "@/components/providers/app-store";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/fields";
 import { cn } from "@/lib/utils";
 import type { FinancialCategory, PayableScope } from "@/types/domain";
@@ -15,25 +14,13 @@ type Changes = Partial<Pick<FinancialCategory, "name" | "active" | "forEmpresa" 
 type DragSource = "LIST" | PayableScope;
 
 const SCOPE = {
-  EMPRESA: {
-    label: "Empresa",
-    flag: "forEmpresa",
-    box: "border-primary/30 bg-primary-soft/40",
-    over: "border-primary bg-primary-soft",
-    chip: "bg-white text-primary border-primary/30",
-    pill: "border-primary bg-primary text-white",
-  },
-  PESSOAL: {
-    label: "Pessoal",
-    flag: "forPessoal",
-    box: "border-violet-200 bg-violet-50/50",
-    over: "border-violet-500 bg-violet-100",
-    chip: "bg-white text-violet-700 border-violet-200",
-    pill: "border-violet-600 bg-violet-600 text-white",
-  },
+  EMPRESA: { label: "Empresa", flag: "forEmpresa", mark: "bg-primary", over: "border-primary ring-2 ring-primary/15", check: "accent-primary" },
+  PESSOAL: { label: "Pessoal", flag: "forPessoal", mark: "bg-personal", over: "border-personal ring-2 ring-personal/15", check: "accent-personal" },
 } as const satisfies Record<PayableScope, unknown>;
 
 const SCOPES: PayableScope[] = ["EMPRESA", "PESSOAL"];
+
+const linkButton = "rounded px-1.5 py-1 text-xs font-medium text-slate-500 hover:bg-surface hover:text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
 
 /** Gerenciador das categorias de contas a pagar: criar, renomear, desativar e ligar a Empresa/Pessoal. */
 export function CategoriesManager() {
@@ -42,6 +29,7 @@ export function CategoriesManager() {
   const [items, setItems] = useState(categories);
   useEffect(() => setItems(categories), [categories]);
 
+  const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -84,7 +72,13 @@ export function CategoriesManager() {
     const r = await createCategoryAction(newName);
     setCreating(false);
     if (!r.ok) return notify(r.error, "error");
-    notify(splitPayables ? "Categoria criada em Empresa. Arraste para Pessoal se precisar." : "Categoria criada.");
+    notify(splitPayables ? "Categoria criada em Empresa." : "Categoria criada.");
+    setNewName("");
+    setAdding(false);
+  }
+
+  function closeAdd() {
+    setAdding(false);
     setNewName("");
   }
 
@@ -116,59 +110,87 @@ export function CategoriesManager() {
     }
     const c = items.find((x) => x.id === payload.id);
     if (!c || payload.from === to) return;
+    // da lista: só inclui; de um quadro para o outro: move
+    if (payload.from === "LIST" && c[SCOPE[to].flag]) return;
     const changes: Changes = { [SCOPE[to].flag]: true };
-    // de um card para o outro: move; da lista: só adiciona
     if (payload.from !== "LIST") changes[SCOPE[payload.from].flag] = false;
-    if (c[SCOPE[to].flag] && payload.from === "LIST") return;
     save(c.id, changes);
   }
 
+  const cols = splitPayables
+    ? "md:grid-cols-[minmax(0,1fr)_56px_64px_64px_150px]"
+    : "md:grid-cols-[minmax(0,1fr)_56px_150px]";
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-[16px]">
-          <Tags className="h-5 w-5 text-navy" strokeWidth={1.8} /> Gerenciador de categorias
-        </CardTitle>
-      </CardHeader>
-      <p className="px-5 pt-1 text-xs text-slate-500">
-        {splitPayables
-          ? "Arraste cada categoria para o card do tipo de conta em que ela deve aparecer. A mesma categoria pode ficar nos dois."
-          : "Categorias usadas nas contas a pagar. Com a separação Empresa/Pessoal ligada (aba Preferências), você também escolhe em qual tipo cada categoria aparece."}
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4">
+        <h2 className="text-[16px] font-semibold text-navy">
+          Categorias de contas a pagar
+          <span className="ml-2 text-sm font-normal text-slate-500">{active.length} ativas</span>
+        </h2>
+        {!adding && (
+          <Button size="sm" onClick={() => setAdding(true)}>
+            <Plus className="h-4 w-4" /> Nova categoria
+          </Button>
+        )}
+      </div>
 
-      <div className={cn("grid gap-5 p-5", splitPayables && "lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]")}>
-        {/* ------------------------------------------------ lista */}
-        <div className="flex min-w-0 flex-col gap-3">
-          <form onSubmit={onCreate} className="flex gap-2">
-            <Input
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="Nova categoria"
-              maxLength={60}
-              aria-label="Nome da nova categoria"
-            />
-            <Button type="submit" disabled={creating || !newName.trim()}>
-              {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Adicionar
-            </Button>
-          </form>
+      <div className={cn("grid", splitPayables && "lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]")}>
+        {/* ------------------------------------------------ tabela */}
+        <div className="min-w-0 px-5 pb-4 pt-3">
+          {adding && (
+            <form onSubmit={onCreate} className="mb-3 flex gap-2">
+              <Input
+                autoFocus
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => e.key === "Escape" && closeAdd()}
+                placeholder="Nome da categoria"
+                maxLength={60}
+                aria-label="Nome da nova categoria"
+              />
+              <Button type="submit" disabled={creating || !newName.trim()}>
+                {creating && <Loader2 className="h-4 w-4 animate-spin" />}
+                Salvar
+              </Button>
+              <Button variant="ghost" onClick={closeAdd}>
+                Cancelar
+              </Button>
+            </form>
+          )}
 
-          <ul className="divide-y divide-line rounded-lg border border-line">
+          <div className={cn("hidden gap-3 rounded-md bg-surface px-3 py-2 text-xs font-medium text-slate-600 md:grid", cols)}>
+            <span>Categoria</span>
+            <span className="text-right">Contas</span>
+            {splitPayables &&
+              SCOPES.map((s) => (
+                <span key={s} className="text-center">
+                  {SCOPE[s].label}
+                </span>
+              ))}
+            <span />
+          </div>
+
+          <ul>
             {active.length === 0 && <li className="px-3 py-4 text-sm text-slate-500">Nenhuma categoria ativa.</li>}
             {active.map((c) => {
               const count = usage.get(c.id) ?? 0;
               const noScope = splitPayables && !c.forEmpresa && !c.forPessoal;
+              const editing = editingId === c.id;
               return (
                 <li
                   key={c.id}
-                  draggable={splitPayables && editingId !== c.id}
+                  draggable={splitPayables && !editing}
                   onDragStart={(e) => onDragStart(e, c.id, "LIST")}
-                  className={cn("flex flex-wrap items-center gap-2 px-3 py-2.5", splitPayables && "cursor-grab active:cursor-grabbing")}
+                  className={cn(
+                    "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border-b border-line px-3 py-2.5 text-[13px] last:border-0",
+                    !editing && cols,
+                    splitPayables && !editing && "cursor-grab active:cursor-grabbing",
+                  )}
                 >
-                  {splitPayables && <GripVertical className="hidden h-4 w-4 shrink-0 text-slate-300 sm:block" aria-hidden />}
-                  {editingId === c.id ? (
+                  {editing ? (
                     <form
-                      className="flex min-w-0 flex-1 gap-1.5"
+                      className="col-span-full flex gap-2"
                       onSubmit={(e) => {
                         e.preventDefault();
                         onRename(c);
@@ -180,86 +202,89 @@ export function CategoriesManager() {
                         maxLength={60}
                         onChange={(e) => setEditName(e.target.value)}
                         onKeyDown={(e) => e.key === "Escape" && setEditingId(null)}
-                        className="h-8"
+                        className="h-9"
                         aria-label={`Novo nome para ${c.name}`}
                       />
-                      <Button type="submit" size="icon" className="h-8 w-8 shrink-0" aria-label="Salvar nome">
-                        <Check className="h-4 w-4" />
+                      <Button type="submit" size="sm" className="h-9">
+                        Salvar
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Cancelar" onClick={() => setEditingId(null)}>
-                        <X className="h-4 w-4" />
+                      <Button variant="ghost" size="sm" className="h-9" onClick={() => setEditingId(null)}>
+                        Cancelar
                       </Button>
                     </form>
                   ) : (
-                    <div className="flex min-w-0 flex-1 items-center gap-2">
-                      <span className="truncate text-sm font-medium text-navy">{c.name}</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingId(c.id);
-                          setEditName(c.name);
-                        }}
-                        className="rounded p-1 text-slate-400 hover:bg-surface hover:text-navy"
-                        aria-label={`Renomear ${c.name}`}
-                        title="Renomear"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                      {busy.has(c.id) && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />}
-                    </div>
-                  )}
-                  <span className="text-xs text-slate-500">{count === 1 ? "1 conta" : `${count} contas`}</span>
-                  {noScope && <Badge tone="warning">sem tipo</Badge>}
-                  {splitPayables && (
-                    <div className="flex gap-1">
-                      {SCOPES.map((s) => (
+                    <>
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="truncate font-medium text-navy">{c.name}</span>
+                        {noScope && <span className="text-xs font-medium text-warning">Sem tipo</span>}
+                        {busy.has(c.id) && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />}
+                      </div>
+                      <span className="text-right tabular-nums text-slate-500">
+                        <span className="md:hidden">Contas: </span>
+                        {count}
+                      </span>
+                      {splitPayables &&
+                        SCOPES.map((s) => (
+                          <label key={s} className="flex items-center gap-2 text-xs text-slate-600 md:justify-center">
+                            <input
+                              type="checkbox"
+                              checked={c[SCOPE[s].flag]}
+                              onChange={() => toggleScope(c, s)}
+                              className={cn("h-4 w-4 cursor-pointer", SCOPE[s].check)}
+                              aria-label={`${c.name} em ${SCOPE[s].label}`}
+                            />
+                            <span className="md:hidden">{SCOPE[s].label}</span>
+                          </label>
+                        ))}
+                      <div className="col-span-full flex justify-end gap-1 md:col-span-1">
                         <button
-                          key={s}
                           type="button"
-                          aria-pressed={c[SCOPE[s].flag]}
-                          onClick={() => toggleScope(c, s)}
-                          className={cn(
-                            "rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors",
-                            c[SCOPE[s].flag] ? SCOPE[s].pill : "border-line bg-white text-slate-500 hover:text-navy",
-                          )}
+                          className={linkButton}
+                          onClick={() => {
+                            setEditingId(c.id);
+                            setEditName(c.name);
+                          }}
                         >
-                          {SCOPE[s].label}
+                          Renomear
                         </button>
-                      ))}
-                    </div>
+                        <button
+                          type="button"
+                          className={linkButton}
+                          onClick={() => save(c.id, { active: false }, `"${c.name}" desativada. Ela não aparece mais nas contas novas.`)}
+                        >
+                          Desativar
+                        </button>
+                      </div>
+                    </>
                   )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-slate-500"
-                    onClick={() => save(c.id, { active: false }, `"${c.name}" desativada. Ela não aparece mais nas contas novas.`)}
-                  >
-                    Desativar
-                  </Button>
                 </li>
               );
             })}
           </ul>
 
           {inactive.length > 0 && (
-            <div>
+            <div className="mt-3 border-t border-line pt-3">
               <button
                 type="button"
                 onClick={() => setShowInactive((v) => !v)}
-                className="text-xs font-medium text-primary hover:underline"
+                className={linkButton}
                 aria-expanded={showInactive}
               >
                 {showInactive ? "Ocultar" : "Mostrar"} desativadas ({inactive.length})
               </button>
               {showInactive && (
-                <ul className="mt-2 divide-y divide-line rounded-lg border border-dashed border-line">
+                <ul className="mt-1">
                   {inactive.map((c) => (
-                    <li key={c.id} className="flex items-center gap-2 px-3 py-2">
-                      <span className="flex-1 truncate text-sm text-slate-500 line-through decoration-slate-300">{c.name}</span>
-                      <span className="text-xs text-slate-400">{usage.get(c.id) ?? 0} contas</span>
-                      <Button variant="outline" size="sm" onClick={() => save(c.id, { active: true }, `"${c.name}" reativada.`)}>
+                    <li key={c.id} className="flex items-center gap-3 border-b border-line px-3 py-2 text-[13px] last:border-0">
+                      <span className="flex-1 truncate text-slate-500">{c.name}</span>
+                      <span className="tabular-nums text-slate-400">{usage.get(c.id) ?? 0}</span>
+                      <button
+                        type="button"
+                        className={cn(linkButton, "text-primary hover:text-primary")}
+                        onClick={() => save(c.id, { active: true }, `"${c.name}" reativada.`)}
+                      >
                         Reativar
-                      </Button>
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -268,9 +293,9 @@ export function CategoriesManager() {
           )}
         </div>
 
-        {/* ------------------------------------------------ cards Empresa / Pessoal */}
+        {/* ------------------------------------------------ quadros Empresa / Pessoal */}
         {splitPayables && (
-          <div className="flex min-w-0 flex-col gap-4">
+          <aside className="flex min-w-0 flex-col gap-3 border-t border-line bg-surface/60 p-4 lg:border-l lg:border-t-0">
             {SCOPES.map((s) => {
               const inZone = active.filter((c) => c[SCOPE[s].flag]);
               return (
@@ -286,50 +311,44 @@ export function CategoriesManager() {
                   }}
                   onDrop={(e) => onDrop(e, s)}
                   className={cn(
-                    "min-h-[120px] rounded-xl border-2 border-dashed p-4 transition-colors",
-                    overZone === s ? SCOPE[s].over : SCOPE[s].box,
+                    "rounded-lg border border-line bg-white transition-[border-color,box-shadow] duration-150",
+                    overZone === s && SCOPE[s].over,
                   )}
                 >
-                  <div className="mb-3 flex items-center justify-between">
-                    <h3 className={cn("text-sm font-semibold", s === "EMPRESA" ? "text-primary" : "text-violet-700")}>
-                      {SCOPE[s].label}
-                    </h3>
-                    <span className="text-xs text-slate-500">{inZone.length}</span>
+                  <div className="flex items-center gap-2 border-b border-line px-3 py-2 text-[13px] font-semibold text-navy">
+                    <span className={cn("h-2 w-2 rounded-[2px]", SCOPE[s].mark)} aria-hidden />
+                    {SCOPE[s].label}
+                    <span className="ml-auto text-xs font-medium text-slate-500">{inZone.length}</span>
                   </div>
-                  {inZone.length === 0 ? (
-                    <p className="text-xs text-slate-500">Arraste categorias para cá.</p>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {inZone.map((c) => (
-                        <span
+                  <ul className="min-h-[44px] py-1">
+                    {inZone.length === 0 ? (
+                      <li className="px-3 py-2 text-xs text-slate-500">Nenhuma categoria</li>
+                    ) : (
+                      inZone.map((c) => (
+                        <li
                           key={c.id}
                           draggable
                           onDragStart={(e) => onDragStart(e, c.id, s)}
-                          className={cn(
-                            "inline-flex cursor-grab items-center gap-1 rounded-full border py-1 pl-3 pr-1 text-xs font-medium active:cursor-grabbing",
-                            SCOPE[s].chip,
-                          )}
+                          className="flex cursor-grab items-center justify-between px-3 py-1 text-[13px] text-ink hover:bg-surface active:cursor-grabbing"
                         >
-                          {c.name}
+                          <span className="truncate">{c.name}</span>
                           <button
                             type="button"
                             onClick={() => save(c.id, { [SCOPE[s].flag]: false })}
-                            className="rounded-full p-0.5 hover:bg-slate-100"
+                            className="rounded p-1 text-slate-400 hover:text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                             aria-label={`Tirar ${c.name} de ${SCOPE[s].label}`}
                           >
-                            <X className="h-3 w-3" />
+                            <X className="h-3.5 w-3.5" />
                           </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                        </li>
+                      ))
+                    )}
+                  </ul>
                 </section>
               );
             })}
-            <p className="text-xs text-slate-500">
-              Da lista para um card: adiciona. De um card para o outro: move. O × tira a categoria do card.
-            </p>
-          </div>
+            <p className="text-xs text-slate-500">Arraste da lista para incluir. Entre os quadros, arrastar move.</p>
+          </aside>
         )}
       </div>
     </Card>
