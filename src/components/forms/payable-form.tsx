@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { useAppStore } from "@/components/providers/app-store";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,9 @@ export function PayableForm({
     register,
     handleSubmit,
     setError,
+    watch,
+    getValues,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<PayableFormValues>({
     resolver: zodResolver(payableSchema),
@@ -42,7 +46,8 @@ export function PayableForm({
           notes: payable.notes ?? "",
         }
       : {
-          categoryId: categories.find((c) => c.name === "Outras")?.id ?? "",
+          // com a separação ligada a categoria depende do tipo, então começa vazia
+          categoryId: splitPayables ? "" : (categories.find((c) => c.active && c.name === "Outras")?.id ?? ""),
           issueDate: today,
           dueDate: today,
           recurrence: "NONE",
@@ -50,6 +55,29 @@ export function PayableForm({
           scope: "",
         },
   });
+
+  const scope = watch("scope");
+  /** Categorias que podem ser escolhidas: ativas e, com a separação ligada, do tipo escolhido.
+   *  A categoria atual de uma conta em edição sempre aparece, mesmo desativada ou de outro tipo. */
+  const options = useMemo(
+    () =>
+      categories.filter(
+        (c) =>
+          c.id === payable?.categoryId ||
+          (c.active &&
+            (!splitPayables ||
+              (scope === "EMPRESA" && c.forEmpresa) ||
+              (scope === "PESSOAL" && c.forPessoal))),
+      ),
+    [categories, payable?.categoryId, splitPayables, scope],
+  );
+  const categoryLocked = splitPayables && !scope;
+
+  // trocou o tipo e a categoria escolhida não pertence a ele: limpa
+  useEffect(() => {
+    const current = getValues("categoryId");
+    if (current && !options.some((c) => c.id === current)) setValue("categoryId", "");
+  }, [options, getValues, setValue]);
 
   async function onSubmit(v: PayableFormValues) {
     const result = editing ? await updatePayable(payable.id, v) : await createPayable(v);
@@ -94,12 +122,21 @@ export function PayableForm({
           </Select>
         </Field>
       )}
-      <Field label="Categoria *" error={errors.categoryId?.message}>
-        <Select {...register("categoryId")}>
-          <option value="">Selecione…</option>
-          {categories.map((c) => (
+      <Field
+        label="Categoria *"
+        error={errors.categoryId?.message}
+        hint={
+          !categoryLocked && splitPayables && options.length === 0
+            ? "Nenhuma categoria para este tipo. Ajuste em Configurações > Gerenciador de categorias."
+            : undefined
+        }
+      >
+        <Select {...register("categoryId")} aria-disabled={categoryLocked} className={categoryLocked ? "bg-surface text-slate-400" : undefined}>
+          <option value="">{categoryLocked ? "Escolha o tipo da conta primeiro" : "Selecione…"}</option>
+          {options.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
+              {c.active ? "" : " (desativada)"}
             </option>
           ))}
         </Select>

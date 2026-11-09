@@ -132,6 +132,16 @@ export function rowToPayable(r: PayableRow): Payable {
   };
 }
 
-export function rowToCategory(r: { id: string; name: string }): FinancialCategory {
-  return { id: r.id, name: r.name };
+export const CATEGORY_SELECT = "id, name, active, for_empresa, for_pessoal";
+
+export interface CategoryRow {
+  id: string;
+  name: string;
+  active: boolean;
+  for_empresa: boolean;
+  for_pessoal: boolean;
+}
+
+export function rowToCategory(r: CategoryRow): FinancialCategory {
+  return { id: r.id, name: r.name, active: r.active, forEmpresa: r.for_empresa, forPessoal: r.for_pessoal };
 }

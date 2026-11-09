@@ -3,11 +3,13 @@ import { createClient } from "@/lib/supabase/server";
 import type { FinancialCategory, Payable, PayableScope, Receivable } from "@/types/domain";
 import { centsToFee } from "./client-mapper";
 import {
+  CATEGORY_SELECT,
   PAYABLE_SELECT,
   RECEIVABLE_SELECT,
   rowToCategory,
   rowToPayable,
   rowToReceivable,
+  type CategoryRow,
   type PayableRow,
   type ReceivableRow,
 } from "./finance-mapper";
@@ -64,16 +66,59 @@ export async function listPayables(today: string): Promise<Payable[]> {
   return rows.map(rowToPayable);
 }
 
+/** Todas as categorias das contas a pagar, inclusive as desativadas (o formulário esconde as desativadas). */
 export async function listPayableCategories(): Promise<FinancialCategory[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("financial_categories")
-    .select("id, name")
+    .select(CATEGORY_SELECT)
     .eq("kind", "PAGAR")
-    .eq("active", true)
     .order("name");
   if (error) throw new Error(`Falha ao carregar categorias: ${error.message}`);
-  return data.map(rowToCategory);
+  return (data as unknown as CategoryRow[]).map(rowToCategory);
+}
+
+export interface CategoryChanges {
+  name?: string;
+  active?: boolean;
+  forEmpresa?: boolean;
+  forPessoal?: boolean;
+}
+
+/** Já existe outra categoria com este nome (sem diferenciar maiúsculas/minúsculas)? */
+export async function payableCategoryNameTaken(name: string, exceptId?: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("financial_categories").select("id, name").eq("kind", "PAGAR");
+  const key = name.toLocaleLowerCase("pt-BR");
+  return (data ?? []).some((c) => c.id !== exceptId && c.name.toLocaleLowerCase("pt-BR") === key);
+}
+
+export async function insertPayableCategory(name: string): Promise<{ id?: string; error: DbError | null }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("financial_categories")
+    .insert({ name, kind: "PAGAR" })
+    .select("id")
+    .single();
+  return { id: data?.id, error };
+}
+
+export async function updatePayableCategory(id: string, c: CategoryChanges): Promise<{ error: DbError | null }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("financial_categories")
+    .update({
+      ...(c.name !== undefined ? { name: c.name } : {}),
+      ...(c.active !== undefined ? { active: c.active } : {}),
+      ...(c.forEmpresa !== undefined ? { for_empresa: c.forEmpresa } : {}),
+      ...(c.forPessoal !== undefined ? { for_pessoal: c.forPessoal } : {}),
+    })
+    .eq("id", id)
+    .eq("kind", "PAGAR")
+    .select("id");
+  if (error) return { error };
+  if (!data?.length) return { error: { code: "P0002", message: "Categoria não encontrada." } };
+  return { error: null };
 }
 
 export async function getReceivable(id: string): Promise<Receivable | null> {

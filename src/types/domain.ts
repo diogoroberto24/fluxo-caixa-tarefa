@@ -106,6 +106,11 @@ export interface Receivable {
 export interface FinancialCategory {
   id: string;
   name: string;
+  /** Desativada: some do cadastro de contas novas, mas continua nas contas antigas. */
+  active: boolean;
+  /** Em quais tipos de conta a categoria aparece (usado quando a separação Empresa/Pessoal está ligada). */
+  forEmpresa: boolean;
+  forPessoal: boolean;
 }
 
 export interface Payable {
