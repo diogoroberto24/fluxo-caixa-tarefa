@@ -141,6 +141,8 @@ export interface TaskType {
   category: string;
   description?: string;
   active: boolean;
+  /** Prioridade de todas as tarefas deste tipo (1 = alta, 2 = média, 3 = baixa). */
+  priority?: TaskPriority;
 }
 
 export type ContractAudience = "FIXO" | "EVENTUAL" | "TODOS";

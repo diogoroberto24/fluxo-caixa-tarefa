@@ -11,7 +11,8 @@ import { Dialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Field, Input, Select, Textarea } from "@/components/ui/fields";
 import { taskTypeSchema, type TaskTypeFormValues } from "@/lib/schemas";
-import { TASK_CATEGORIES } from "@/services/tasks";
+import { TASK_CATEGORIES, TASK_PRIORITY_LABEL } from "@/services/tasks";
+import { cn } from "@/lib/utils";
 import type { TaskType } from "@/types/domain";
 
 function TaskTypeForm({ type, onDone }: { type?: TaskType; onDone: () => void }) {
@@ -24,8 +25,14 @@ function TaskTypeForm({ type, onDone }: { type?: TaskType; onDone: () => void })
   } = useForm<TaskTypeFormValues>({
     resolver: zodResolver(taskTypeSchema),
     defaultValues: type
-      ? { name: type.name, category: type.category, description: type.description ?? "", active: type.active ? "true" : "false" }
-      : { name: "", category: TASK_CATEGORIES[0], description: "", active: "true" },
+      ? {
+          name: type.name,
+          category: type.category,
+          description: type.description ?? "",
+          active: type.active ? "true" : "false",
+          priority: type.priority ? (String(type.priority) as "1" | "2" | "3") : "",
+        }
+      : { name: "", category: TASK_CATEGORIES[0], description: "", active: "true", priority: "" },
   });
   const categories = type && !TASK_CATEGORIES.includes(type.category as never) ? [type.category, ...TASK_CATEGORIES] : TASK_CATEGORIES;
 
@@ -59,12 +66,26 @@ function TaskTypeForm({ type, onDone }: { type?: TaskType; onDone: () => void })
           <option value="false">Inativa</option>
         </Select>
       </Field>
+      <Field
+        label="Prioridade"
+        hint="Vale para todas as tarefas deste tipo, inclusive as já lançadas. Prioridade 1 aparece primeiro na lista."
+        className="sm:col-span-2"
+      >
+        <Select {...register("priority")}>
+          <option value="">Sem prioridade</option>
+          {([1, 2, 3] as const).map((p) => (
+            <option key={p} value={p}>
+              {TASK_PRIORITY_LABEL[p]}
+            </option>
+          ))}
+        </Select>
+      </Field>
       <Field label="Descrição (opcional)" className="sm:col-span-2">
         <Textarea placeholder="Explica o que deve ser feito. Aparece ao escolher a tarefa." {...register("description")} />
       </Field>
       {type && (
         <p className="rounded-md bg-surface px-3 py-2 text-xs text-slate-600 sm:col-span-2">
-          Alterar o nome ou a descrição vale para os <strong>próximos</strong> lançamentos. Tarefas já lançadas mantêm o nome que tinham.
+          Alterar o nome ou a descrição vale para os <strong>próximos</strong> lançamentos. Tarefas já lançadas mantêm o nome que tinham. Já a <strong>prioridade</strong> muda em todas as tarefas deste tipo, inclusive as já lançadas.
         </p>
       )}
       <div className="flex justify-end gap-2 sm:col-span-2">
@@ -75,6 +96,18 @@ function TaskTypeForm({ type, onDone }: { type?: TaskType; onDone: () => void })
         </Button>
       </div>
     </form>
+  );
+}
+
+const PRIORITY_TONE = { 1: ["text-danger", "bg-danger"], 2: ["text-warning", "bg-warning"], 3: ["text-slate-500", "bg-slate-400"] } as const;
+
+function PriorityText({ priority }: { priority: 1 | 2 | 3 }) {
+  const [text, bg] = PRIORITY_TONE[priority];
+  return (
+    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold", text)}>
+      <span aria-hidden className={cn("h-2 w-2 rounded-[2px]", bg)} />
+      Prioridade {TASK_PRIORITY_LABEL[priority]}
+    </span>
   );
 }
 
@@ -114,10 +147,11 @@ export function TaskTypesDialog({ open, onClose }: { open: boolean; onClose: () 
           ) : (
             <ul className="divide-y divide-line rounded-lg border border-line">
               {taskTypes.map((t) => (
-                <li key={t.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate font-semibold text-navy">{t.name}</span>
+                <li key={t.id} className="flex items-start justify-between gap-3 px-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="font-semibold text-navy">{t.name}</span>
+                      {t.priority && <PriorityText priority={t.priority} />}
                       {!t.active && <Badge>Inativa</Badge>}
                     </div>
                     <div className="text-xs text-slate-500">
@@ -125,7 +159,14 @@ export function TaskTypesDialog({ open, onClose }: { open: boolean; onClose: () 
                       {t.description ? ` · ${t.description}` : ""}
                     </div>
                   </div>
-                  <Button size="icon" variant="outline" aria-label={`Editar ${t.name}`} title="Editar" onClick={() => setForm({ type: t })}>
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="shrink-0"
+                    aria-label={`Editar ${t.name}`}
+                    title="Editar"
+                    onClick={() => setForm({ type: t })}
+                  >
                     <Pencil className="h-4 w-4" />
                   </Button>
                 </li>

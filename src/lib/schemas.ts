@@ -173,8 +173,6 @@ export const taskSchema = z.object({
   recurrence: z.enum(recurrenceValues),
   /** Observação opcional da tarefa. */
   notes: optional,
-  /** "" = sem prioridade. */
-  priority: z.enum(["", "1", "2", "3"]).optional(),
 });
 export type TaskFormValues = z.infer<typeof taskSchema>;
 
@@ -183,8 +181,6 @@ export const tasksBatchSchema = z.object({
   clientId: required("Selecione o cliente."),
   assigneeId: optional,
   notes: optional,
-  /** "" = sem prioridade; vale para todas as tarefas do lançamento. */
-  priority: z.enum(["", "1", "2", "3"]).optional(),
   items: z
     .array(
       z.object({
@@ -204,6 +200,8 @@ export const taskTypeSchema = z.object({
   category: required("Selecione a categoria."),
   description: optional,
   active: z.enum(["true", "false"]),
+  /** "" = sem prioridade. Vale para todas as tarefas deste tipo. */
+  priority: z.enum(["", "1", "2", "3"]),
 });
 export type TaskTypeFormValues = z.infer<typeof taskTypeSchema>;
 

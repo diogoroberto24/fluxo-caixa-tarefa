@@ -53,13 +53,6 @@ export async function createTasksAction(
     p_notes: v.notes || null,
   });
   if (error || !data) return { ok: false, error: error ? friendlyDbError(error) : UNEXPECTED_ERROR };
-  if (v.priority) {
-    const p = await rpc("set_task_priority", { p_execution_ids: data, p_priority: Number(v.priority) });
-    if (p.error) {
-      refresh();
-      return { ok: false, error: "As tarefas foram lançadas, mas a prioridade não foi salva. Edite a tarefa para defini-la." };
-    }
-  }
   const created = (await Promise.all(data.map((id) => getTask(id)))).filter((t): t is Task => t !== null);
   refresh();
   return { ok: true, data: created };
@@ -85,10 +78,6 @@ export async function updateTaskAction(
     p_notes: v.notes || null,
   });
   if (error) return { ok: false, error: friendlyDbError(error) };
-  if (v.priority !== undefined) {
-    const p = await rpc("set_task_priority", { p_execution_ids: [id], p_priority: v.priority ? Number(v.priority) : null });
-    if (p.error) return { ok: false, error: friendlyDbError(p.error), field: "priority" };
-  }
   const task = await getTask(id);
   refresh();
   return task ? { ok: true, data: task } : { ok: false, error: UNEXPECTED_ERROR };
@@ -114,6 +103,7 @@ export async function saveTaskTypeAction(
     p_category: v.category,
     p_description: v.description || null,
     p_active: v.active === "true",
+    p_priority: v.priority ? Number(v.priority) : null,
   });
   if (error || !data) {
     const msg = error ? friendlyDbError(error) : UNEXPECTED_ERROR;

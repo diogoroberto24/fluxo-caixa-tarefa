@@ -111,6 +111,7 @@ interface TaskTypeRow {
   category: string;
   description: string | null;
   active: boolean;
+  priority: number | null;
 }
 
 const toTaskType = (r: TaskTypeRow): TaskType => ({
@@ -119,6 +120,7 @@ const toTaskType = (r: TaskTypeRow): TaskType => ({
   category: r.category,
   description: r.description ?? undefined,
   active: r.active,
+  priority: (r.priority ?? undefined) as TaskPriority | undefined,
 });
 
 /** Catálogo completo (ativos e inativos); a tela de lançamento mostra só os ativos. */
@@ -126,7 +128,7 @@ export async function listTaskTypes(): Promise<TaskType[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("task_types")
-    .select("id, name, category, description, active")
+    .select("id, name, category, description, active, priority")
     .order("name");
   if (error) throw new Error(`Falha ao carregar o cadastro de tarefas: ${error.message}`);
   return (data as TaskTypeRow[]).map(toTaskType);
@@ -136,7 +138,7 @@ export async function getTaskType(id: string): Promise<TaskType | null> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("task_types")
-    .select("id, name, category, description, active")
+    .select("id, name, category, description, active, priority")
     .eq("id", id)
     .maybeSingle();
   return data ? toTaskType(data as TaskTypeRow) : null;

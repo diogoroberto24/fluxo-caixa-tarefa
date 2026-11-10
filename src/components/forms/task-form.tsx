@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertTriangle, ClipboardList, Loader2, Search } from "lucide-react";
 import Link from "next/link";
-import { forwardRef, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useAppStore } from "@/components/providers/app-store";
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,6 @@ function BatchTaskForm({ defaultClientId, onDone }: { defaultClientId?: string |
 
   const [clientId, setClientId] = useState(defaultClientId ?? "");
   const [assigneeId, setAssigneeId] = useState("");
-  const [priority, setPriority] = useState<"" | "1" | "2" | "3">("");
   const [notes, setNotes] = useState("");
   const [defaultDue, setDefaultDue] = useState(addDays(today, 7));
   const [defaultRec, setDefaultRec] = useState<Recurrence>("NONE");
@@ -72,7 +71,6 @@ function BatchTaskForm({ defaultClientId, onDone }: { defaultClientId?: string |
       clientId,
       assigneeId,
       notes,
-      priority,
       items: selectedIds.map((id) => ({
         taskTypeId: id,
         dueDate: picked[id].due ?? defaultDue,
@@ -157,7 +155,11 @@ function BatchTaskForm({ defaultClientId, onDone }: { defaultClientId?: string |
                   <input type="checkbox" className="mt-1 h-4 w-4 accent-primary" checked={on} onChange={() => toggle(t.id)} />
                   <span className="min-w-0 flex-1">
                     <span className="block font-medium text-navy">{t.name}</span>
-                    <span className="block text-xs text-slate-500">{t.category}{t.description ? ` · ${t.description}` : ""}</span>
+                    <span className="block text-xs text-slate-500">
+                      {t.category}
+                      {t.priority ? ` · Prioridade ${TASK_PRIORITY_LABEL[t.priority]}` : ""}
+                      {t.description ? ` · ${t.description}` : ""}
+                    </span>
                   </span>
                 </label>
                 {on && (
@@ -201,9 +203,6 @@ function BatchTaskForm({ defaultClientId, onDone }: { defaultClientId?: string |
           {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
         </Select>
       </Field>
-      <Field label="Prioridade (todas as tarefas)" hint="Tarefas de prioridade 1 aparecem primeiro na lista.">
-        <PrioritySelect value={priority} onChange={(e) => setPriority(e.target.value as typeof priority)} />
-      </Field>
       <Field label="Observação (opcional, todas as tarefas)" className="sm:col-span-2">
         <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ex.: cliente pediu prioridade, documentos já recebidos…" />
       </Field>
@@ -240,7 +239,6 @@ function EditTaskForm({ task, onDone }: { task: Task; onDone: () => void }) {
       assigneeId: task.assigneeId ?? "",
       recurrence: task.recurrence,
       notes: task.notes ?? "",
-      priority: task.priority ? (String(task.priority) as "1" | "2" | "3") : "",
     },
   });
 
@@ -272,8 +270,8 @@ function EditTaskForm({ task, onDone }: { task: Task; onDone: () => void }) {
           {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
         </Select>
       </Field>
-      <Field label="Prioridade" hint="Vale também para as próximas ocorrências desta tarefa.">
-        <PrioritySelect {...register("priority")} />
+      <Field label="Prioridade" hint="Definida no Cadastro de tarefas.">
+        <Input readOnly value={task.priority ? TASK_PRIORITY_LABEL[task.priority] : "Sem prioridade"} />
       </Field>
       <Field label="Recorrência" hint={task.autoKind ? "Automática para clientes fixos." : "Definida no lançamento."}>
         <Input readOnly value={task.autoKind === "ALVARA" ? "Anual · todo ano em 31/05" : RECURRENCE_LABEL[task.recurrence]} />
@@ -291,14 +289,3 @@ function EditTaskForm({ task, onDone }: { task: Task; onDone: () => void }) {
   );
 }
 
-const PrioritySelect = forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HTMLSelectElement>>((props, ref) => (
-  <Select ref={ref} {...props}>
-    <option value="">Sem prioridade</option>
-    {([1, 2, 3] as const).map((p) => (
-      <option key={p} value={p}>
-        {TASK_PRIORITY_LABEL[p]}
-      </option>
-    ))}
-  </Select>
-));
-PrioritySelect.displayName = "PrioritySelect";
