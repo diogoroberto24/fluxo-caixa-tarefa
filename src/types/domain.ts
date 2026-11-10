@@ -192,8 +192,14 @@ export interface Task {
   notes?: string;
   assigneeId?: string;
   recurrence: Recurrence;
+  /** 1 = alta, 2 = média, 3 = baixa; vazio = sem prioridade. Vale para a série. */
+  priority?: TaskPriority;
+  /** Tarefa automática do sistema (ex.: Alvará anual dos clientes fixos). */
+  autoKind?: "ALVARA";
   isDemo: boolean;
 }
+
+export type TaskPriority = 1 | 2 | 3;
 
 /** Status exibido: derivado de datas e pagamento, nunca digitado. */
 export type ChargeStatus = "PENDENTE" | "PAGO" | "VENCIDO" | "CANCELADO";

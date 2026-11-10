@@ -16,6 +16,7 @@ import {
   isTaskOpen,
   NEAR_DEADLINE_DAYS,
   sortTasks,
+  taskInMonth,
   taskUrgency,
   type TaskFilter,
 } from "@/services/tasks";
@@ -52,7 +53,7 @@ export function TasksPanel({
   const client = clients.find((c) => c.id === clientId);
 
   const { rows, hiddenCount, overdue } = useMemo(() => {
-    const inMonth = tasks.filter((t) => monthOf(t.dueDate) === month);
+    const inMonth = tasks.filter((t) => taskInMonth(t, month));
     const filtered = sortTasks(filterTasks(inMonth, { filter, clientId }), today);
     // Visão padrão: o que está em aberto no mês (atrasadas, do dia e demais pendências).
     let list = filtered;
@@ -83,7 +84,7 @@ export function TasksPanel({
       late: count("ATRASADA"),
       today: count("HOJE"),
       soon: count("PROXIMA"),
-      done: mine.filter((t) => t.status === "CONCLUIDA" && monthOf(t.dueDate) === month).length,
+      done: mine.filter((t) => t.status === "CONCLUIDA" && taskInMonth(t, month)).length,
     };
   }, [tasks, clientId, today, month]);
 

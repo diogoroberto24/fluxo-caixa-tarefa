@@ -1,7 +1,7 @@
 import "server-only";
 import { toBrDate } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
-import type { Recurrence, Task, TaskStatus, TaskType } from "@/types/domain";
+import type { Recurrence, Task, TaskPriority, TaskStatus, TaskType } from "@/types/domain";
 
 export interface DbError {
   code?: string;
@@ -28,12 +28,14 @@ interface ExecutionRow {
     assignee_id: string | null;
     notes: string | null;
     is_demo: boolean;
+    priority: number | null;
+    auto_kind: string | null;
     recurrence_rules: Embedded<{ frequency: string }>;
   }>;
 }
 
 const SELECT =
-  "id, definition_id, due_date, status, completed_at, completion_notes, created_at, task_definitions(client_id, title, description, category, assignee_id, notes, is_demo, recurrence_rules(frequency))";
+  "id, definition_id, due_date, status, completed_at, completion_notes, created_at, task_definitions(client_id, title, description, category, assignee_id, notes, is_demo, priority, auto_kind, recurrence_rules(frequency))";
 
 /** Execuções concluídas/canceladas mais antigas que isto ficam fora da carga inicial. */
 export const TASK_HISTORY_MONTHS = 18;
@@ -62,7 +64,10 @@ function toTask(r: ExecutionRow, lastDone: Map<string, string>): Task | null {
     completionNotes: r.completion_notes ?? undefined,
     notes: d.notes ?? undefined,
     assigneeId: d.assignee_id ?? undefined,
-    recurrence: (first(d.recurrence_rules)?.frequency ?? "NONE") as Recurrence,
+    // o Alvará não tem regra de recorrência: a próxima vem todo 1º de janeiro (prazo 31/05)
+    recurrence: (d.auto_kind === "ALVARA" ? "ANUAL" : (first(d.recurrence_rules)?.frequency ?? "NONE")) as Recurrence,
+    priority: (d.priority ?? undefined) as TaskPriority | undefined,
+    autoKind: d.auto_kind === "ALVARA" ? "ALVARA" : undefined,
     isDemo: d.is_demo,
   };
 }

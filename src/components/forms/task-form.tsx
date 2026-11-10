@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertTriangle, ClipboardList, Loader2, Search } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { forwardRef, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useAppStore } from "@/components/providers/app-store";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { formatDate } from "@/lib/format";
 import { can } from "@/lib/permissions";
 import { taskSchema, tasksBatchSchema, type TaskFormValues } from "@/lib/schemas";
 import { cn, normalize } from "@/lib/utils";
-import { isTaskOpen } from "@/services/tasks";
+import { isTaskOpen, TASK_PRIORITY_LABEL } from "@/services/tasks";
 import type { Recurrence, Task } from "@/types/domain";
 
 const RECURRENCE_LABEL = { NONE: "Não se repete", MENSAL: "Mensal", SEMESTRAL: "Semestral", ANUAL: "Anual" } as const;
@@ -40,6 +40,7 @@ function BatchTaskForm({ defaultClientId, onDone }: { defaultClientId?: string |
 
   const [clientId, setClientId] = useState(defaultClientId ?? "");
   const [assigneeId, setAssigneeId] = useState("");
+  const [priority, setPriority] = useState<"" | "1" | "2" | "3">("");
   const [notes, setNotes] = useState("");
   const [defaultDue, setDefaultDue] = useState(addDays(today, 7));
   const [defaultRec, setDefaultRec] = useState<Recurrence>("NONE");
@@ -71,6 +72,7 @@ function BatchTaskForm({ defaultClientId, onDone }: { defaultClientId?: string |
       clientId,
       assigneeId,
       notes,
+      priority,
       items: selectedIds.map((id) => ({
         taskTypeId: id,
         dueDate: picked[id].due ?? defaultDue,
@@ -199,6 +201,9 @@ function BatchTaskForm({ defaultClientId, onDone }: { defaultClientId?: string |
           {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
         </Select>
       </Field>
+      <Field label="Prioridade (todas as tarefas)" hint="Tarefas de prioridade 1 aparecem primeiro na lista.">
+        <PrioritySelect value={priority} onChange={(e) => setPriority(e.target.value as typeof priority)} />
+      </Field>
       <Field label="Observação (opcional, todas as tarefas)" className="sm:col-span-2">
         <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ex.: cliente pediu prioridade, documentos já recebidos…" />
       </Field>
@@ -235,6 +240,7 @@ function EditTaskForm({ task, onDone }: { task: Task; onDone: () => void }) {
       assigneeId: task.assigneeId ?? "",
       recurrence: task.recurrence,
       notes: task.notes ?? "",
+      priority: task.priority ? (String(task.priority) as "1" | "2" | "3") : "",
     },
   });
 
@@ -266,8 +272,11 @@ function EditTaskForm({ task, onDone }: { task: Task; onDone: () => void }) {
           {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
         </Select>
       </Field>
-      <Field label="Recorrência" hint="Definida no lançamento." className="sm:col-span-2">
-        <Input readOnly value={RECURRENCE_LABEL[task.recurrence]} />
+      <Field label="Prioridade" hint="Vale também para as próximas ocorrências desta tarefa.">
+        <PrioritySelect {...register("priority")} />
+      </Field>
+      <Field label="Recorrência" hint={task.autoKind ? "Automática para clientes fixos." : "Definida no lançamento."}>
+        <Input readOnly value={task.autoKind === "ALVARA" ? "Anual · todo ano em 31/05" : RECURRENCE_LABEL[task.recurrence]} />
       </Field>
       <Field label="Observação (opcional)" className="sm:col-span-2">
         <Textarea {...register("notes")} />
@@ -281,3 +290,15 @@ function EditTaskForm({ task, onDone }: { task: Task; onDone: () => void }) {
     </form>
   );
 }
+
+const PrioritySelect = forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HTMLSelectElement>>((props, ref) => (
+  <Select ref={ref} {...props}>
+    <option value="">Sem prioridade</option>
+    {([1, 2, 3] as const).map((p) => (
+      <option key={p} value={p}>
+        {TASK_PRIORITY_LABEL[p]}
+      </option>
+    ))}
+  </Select>
+));
+PrioritySelect.displayName = "PrioritySelect";

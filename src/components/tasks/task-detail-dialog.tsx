@@ -11,7 +11,7 @@ import { Field, Textarea } from "@/components/ui/fields";
 import { formatDate } from "@/lib/format";
 import { can } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
-import { isTaskOpen } from "@/services/tasks";
+import { isTaskOpen, TASK_PRIORITY_LABEL } from "@/services/tasks";
 
 const RECURRENCE: Record<string, string> = {
   NONE: "Não se repete",
@@ -87,7 +87,8 @@ export function TaskDetailDialog({
             <div><dt className="text-xs text-slate-500">Prazo</dt><dd className="font-medium">{formatDate(task.dueDate)}</dd></div>
             <div><dt className="text-xs text-slate-500">Última realização</dt><dd>{formatDate(task.lastDoneAt)}</dd></div>
             <div><dt className="text-xs text-slate-500">Conclusão desta execução</dt><dd>{formatDate(task.completedAt)}</dd></div>
-            <div><dt className="text-xs text-slate-500">Recorrência</dt><dd>{RECURRENCE[task.recurrence]}</dd></div>
+            <div><dt className="text-xs text-slate-500">Recorrência</dt><dd>{task.autoKind === "ALVARA" ? "Anual · todo ano em 31/05" : RECURRENCE[task.recurrence]}</dd></div>
+            <div><dt className="text-xs text-slate-500">Prioridade</dt><dd>{task.priority ? TASK_PRIORITY_LABEL[task.priority] : "Sem prioridade"}</dd></div>
             {task.description && <div className="sm:col-span-2"><dt className="text-xs text-slate-500">Descrição</dt><dd>{task.description}</dd></div>}
             {task.notes && <div className="sm:col-span-2"><dt className="text-xs text-slate-500">Observações</dt><dd>{task.notes}</dd></div>}
             {task.completionNotes && <div className="sm:col-span-2"><dt className="text-xs text-slate-500">Observação da execução</dt><dd>{task.completionNotes}</dd></div>}
