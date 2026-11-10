@@ -38,7 +38,7 @@ export function sortTasks(tasks: Task[], today: string): Task[] {
     if (!isTaskOpen(t.status)) return 2;
     return taskUrgency(t, today) === "ATRASADA" ? 0 : 1;
   };
-  const prio = (t: Task) => t.priority ?? 4;
+  const prio = (t: Task) => t.priority ?? 99; // sem prioridade: depois do nível 5
   return [...tasks].sort(
     (a, b) => rank(a) - rank(b) || (rank(a) < 2 ? prio(a) - prio(b) : 0) || a.dueDate.localeCompare(b.dueDate),
   );
@@ -55,7 +55,24 @@ export function taskInMonth(task: Task, month: string): boolean {
   return month >= (start < due ? start : due) && month <= due;
 }
 
-export const TASK_PRIORITY_LABEL: Record<TaskPriority, string> = { 1: "1 · Alta", 2: "2 · Média", 3: "3 · Baixa" };
+export const TASK_PRIORITIES: TaskPriority[] = [1, 2, 3, 4, 5];
+
+export const TASK_PRIORITY_LABEL: Record<TaskPriority, string> = {
+  1: "1 · Muito alta",
+  2: "2 · Alta",
+  3: "3 · Média",
+  4: "4 · Baixa",
+  5: "5 · Muito baixa",
+};
+
+/** Cor do texto e da marquinha de cada nível (a cor sempre acompanha o texto). */
+export const TASK_PRIORITY_TONE: Record<TaskPriority, { text: string; mark: string }> = {
+  1: { text: "text-danger", mark: "bg-danger" },
+  2: { text: "text-warning", mark: "bg-warning" },
+  3: { text: "text-yellow-700", mark: "bg-yellow-500" },
+  4: { text: "text-slate-600", mark: "bg-slate-500" },
+  5: { text: "text-slate-400", mark: "bg-slate-300" },
+};
 
 export const TASK_STATUS_LABEL: Record<TaskStatus, string> = {
   PENDENTE: "Pendente",

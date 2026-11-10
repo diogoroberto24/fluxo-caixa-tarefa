@@ -13,7 +13,7 @@ import { Field, Input, Select } from "@/components/ui/fields";
 import { formatDate } from "@/lib/format";
 import { can } from "@/lib/permissions";
 import { cn, normalize } from "@/lib/utils";
-import { isTaskOpen, sortTasks, TASK_CATEGORIES, TASK_PRIORITY_LABEL, taskInMonth, taskUrgency } from "@/services/tasks";
+import { isTaskOpen, sortTasks, TASK_CATEGORIES, TASK_PRIORITIES, TASK_PRIORITY_LABEL, TASK_PRIORITY_TONE, taskInMonth, taskUrgency } from "@/services/tasks";
 import type { TaskPriority, TaskStatus } from "@/types/domain";
 import { StatCard } from "@/components/finance/shared";
 import { TaskDetailDialog } from "./task-detail-dialog";
@@ -21,15 +21,14 @@ import { TaskTypesDialog } from "./task-types-dialog";
 
 const COLS = "md:grid-cols-[84px_1.2fr_1.5fr_1fr_0.8fr_1.2fr_0.9fr_0.9fr]";
 
-const PRIORITY_TONE = { 1: "text-danger bg-danger", 2: "text-warning bg-warning", 3: "text-slate-500 bg-slate-400" } as const;
 
 /** Prioridade com marca de cor e texto (a cor nunca vem sozinha). */
 function PriorityMark({ priority }: { priority?: TaskPriority }) {
   if (!priority) return <span className="hidden text-xs text-slate-400 md:inline">—</span>;
-  const [text, bg] = PRIORITY_TONE[priority].split(" ");
+  const tone = TASK_PRIORITY_TONE[priority];
   return (
-    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold", text)}>
-      <span aria-hidden className={cn("h-2 w-2 rounded-[2px]", bg)} />
+    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold", tone.text)}>
+      <span aria-hidden className={cn("h-2 w-2 rounded-[2px]", tone.mark)} />
       {TASK_PRIORITY_LABEL[priority]}
     </span>
   );
@@ -43,7 +42,7 @@ export function TasksView({ initialMonth = "" }: { initialMonth?: string }) {
   const [clientId, setClientId] = useState("");
   const [assigneeId, setAssigneeId] = useState("");
   const [category, setCategory] = useState("");
-  const [priority, setPriority] = useState<"" | "0" | "1" | "2" | "3">("");
+  const [priority, setPriority] = useState<"" | "0" | "1" | "2" | "3" | "4" | "5">("");
   const [month, setMonth] = useState(initialMonth);
   const [dueFrom, setDueFrom] = useState("");
   const [dueTo, setDueTo] = useState("");
@@ -150,7 +149,7 @@ export function TasksView({ initialMonth = "" }: { initialMonth?: string }) {
           <Field label="Prioridade">
             <Select value={priority} onChange={(e) => setPriority(e.target.value as typeof priority)}>
               <option value="">Todas</option>
-              {([1, 2, 3] as const).map((p) => <option key={p} value={p}>{TASK_PRIORITY_LABEL[p]}</option>)}
+              {TASK_PRIORITIES.map((p) => <option key={p} value={p}>{TASK_PRIORITY_LABEL[p]}</option>)}
               <option value="0">Sem prioridade</option>
             </Select>
           </Field>

@@ -141,7 +141,7 @@ export interface TaskType {
   category: string;
   description?: string;
   active: boolean;
-  /** Prioridade de todas as tarefas deste tipo (1 = alta, 2 = média, 3 = baixa). */
+  /** Prioridade de todas as tarefas deste tipo (1 = muito alta … 5 = muito baixa). */
   priority?: TaskPriority;
 }
 
@@ -194,14 +194,14 @@ export interface Task {
   notes?: string;
   assigneeId?: string;
   recurrence: Recurrence;
-  /** 1 = alta, 2 = média, 3 = baixa; vazio = sem prioridade. Vale para a série. */
+  /** 1 = muito alta … 5 = muito baixa; vazio = sem prioridade. Vale para a série. */
   priority?: TaskPriority;
   /** Tarefa automática do sistema (ex.: Alvará anual dos clientes fixos). */
   autoKind?: "ALVARA";
   isDemo: boolean;
 }
 
-export type TaskPriority = 1 | 2 | 3;
+export type TaskPriority = 1 | 2 | 3 | 4 | 5;
 
 /** Status exibido: derivado de datas e pagamento, nunca digitado. */
 export type ChargeStatus = "PENDENTE" | "PAGO" | "VENCIDO" | "CANCELADO";

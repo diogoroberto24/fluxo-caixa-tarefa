@@ -11,9 +11,9 @@ import { Dialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Field, Input, Select, Textarea } from "@/components/ui/fields";
 import { taskTypeSchema, type TaskTypeFormValues } from "@/lib/schemas";
-import { TASK_CATEGORIES, TASK_PRIORITY_LABEL } from "@/services/tasks";
+import { TASK_CATEGORIES, TASK_PRIORITIES, TASK_PRIORITY_LABEL, TASK_PRIORITY_TONE } from "@/services/tasks";
 import { cn } from "@/lib/utils";
-import type { TaskType } from "@/types/domain";
+import type { TaskPriority, TaskType } from "@/types/domain";
 
 function TaskTypeForm({ type, onDone }: { type?: TaskType; onDone: () => void }) {
   const { saveTaskType, notify } = useAppStore();
@@ -30,7 +30,7 @@ function TaskTypeForm({ type, onDone }: { type?: TaskType; onDone: () => void })
           category: type.category,
           description: type.description ?? "",
           active: type.active ? "true" : "false",
-          priority: type.priority ? (String(type.priority) as "1" | "2" | "3") : "",
+          priority: type.priority ? (String(type.priority) as TaskTypeFormValues["priority"]) : "",
         }
       : { name: "", category: TASK_CATEGORIES[0], description: "", active: "true", priority: "" },
   });
@@ -73,7 +73,7 @@ function TaskTypeForm({ type, onDone }: { type?: TaskType; onDone: () => void })
       >
         <Select {...register("priority")}>
           <option value="">Sem prioridade</option>
-          {([1, 2, 3] as const).map((p) => (
+          {TASK_PRIORITIES.map((p) => (
             <option key={p} value={p}>
               {TASK_PRIORITY_LABEL[p]}
             </option>
@@ -99,13 +99,11 @@ function TaskTypeForm({ type, onDone }: { type?: TaskType; onDone: () => void })
   );
 }
 
-const PRIORITY_TONE = { 1: ["text-danger", "bg-danger"], 2: ["text-warning", "bg-warning"], 3: ["text-slate-500", "bg-slate-400"] } as const;
-
-function PriorityText({ priority }: { priority: 1 | 2 | 3 }) {
-  const [text, bg] = PRIORITY_TONE[priority];
+function PriorityText({ priority }: { priority: TaskPriority }) {
+  const tone = TASK_PRIORITY_TONE[priority];
   return (
-    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold", text)}>
-      <span aria-hidden className={cn("h-2 w-2 rounded-[2px]", bg)} />
+    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold", tone.text)}>
+      <span aria-hidden className={cn("h-2 w-2 rounded-[2px]", tone.mark)} />
       Prioridade {TASK_PRIORITY_LABEL[priority]}
     </span>
   );

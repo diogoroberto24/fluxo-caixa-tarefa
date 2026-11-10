@@ -201,7 +201,7 @@ export const taskTypeSchema = z.object({
   description: optional,
   active: z.enum(["true", "false"]),
   /** "" = sem prioridade. Vale para todas as tarefas deste tipo. */
-  priority: z.enum(["", "1", "2", "3"]),
+  priority: z.enum(["", "1", "2", "3", "4", "5"]),
 });
 export type TaskTypeFormValues = z.infer<typeof taskTypeSchema>;
 

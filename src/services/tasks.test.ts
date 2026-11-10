@@ -31,6 +31,7 @@ describe("sortTasks", () => {
       task("atrasada-p1", "2026-11-08", 1),
       task("hoje-p3", TODAY, 3),
       task("futura-p1-antes", "2026-12-01", 1),
+      task("futura-p5", "2026-11-11", 5),
     ];
     expect(sortTasks(list, TODAY).map((t) => t.id)).toEqual([
       "atrasada-p1",
@@ -39,6 +40,7 @@ describe("sortTasks", () => {
       "futura-p1-antes",
       "futura-p1",
       "hoje-p3",
+      "futura-p5",
       "futura-sem",
       "concluida",
     ]);
